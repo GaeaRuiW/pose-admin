@@ -4,97 +4,99 @@
 
 @layer base {
   :root {
-    --background: 210 17% 95%; /* Light Gray from #ecf0f1 */
-    --foreground: 240 10% 3.9%; /* Default dark, good for light bg */
+    /* CoreUI Light Theme Inspired Palette */
+    --background: 220 13% 95%; /* Light Grey - similar to CoreUI's #ebedef */
+    --foreground: 220 9% 26%; /* Dark Grey/Black - for text on light background */
 
     --card: 0 0% 100%; /* White cards */
-    --card-foreground: 240 10% 3.9%;
+    --card-foreground: 220 9% 26%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 3.9%;
+    --popover-foreground: 220 9% 26%;
 
-    --primary: 207 68% 53%; /* Calm Blue from #3498db */
-    --primary-foreground: 210 40% 98%; /* Light color for text on primary */
+    --primary: 247 74% 52%; /* CoreUI Primary Blue - #321fdb */
+    --primary-foreground: 0 0% 100%; /* White text on primary */
 
-    --secondary: 210 17% 90%; /* Slightly darker gray for secondary elements */
-    --secondary-foreground: 240 10% 3.9%;
+    --secondary: 210 17% 90%; /* Lighter Grey for secondary elements */
+    --secondary-foreground: 220 9% 26%;
 
-    --muted: 210 17% 85%; /* Even darker gray for muted text/elements */
-    --muted-foreground: 240 4% 46.1%;
+    --muted: 210 17% 85%; /* Muted Grey */
+    --muted-foreground: 220 9% 45%;
 
-    --accent: 145 63% 49%; /* Green from #2ecc71 */
-    --accent-foreground: 145 63% 95%; /* Very light green or white for text on accent */
+    --accent: 45 100% 51%; /* CoreUI Yellow/Gold accent - #ffc107 (example) */
+    --accent-foreground: 220 9% 26%; /* Dark text on accent */
 
-    --destructive: 0 84.2% 60.2%;
+    --destructive: 0 84.2% 60.2%; /* Red for destructive actions */
     --destructive-foreground: 0 0% 98%;
 
-    --border: 210 17% 88%; /* Border color, fits with gray theme */
-    --input: 210 17% 92%; /* Input background */
-    --ring: 207 68% 53%; /* Ring color to match primary */
+    --border: 220 13% 88%; /* Light Grey border, consistent with CoreUI */
+    --input: 0 0% 100%; /* White input background */
+    --ring: 247 74% 62%; /* Ring color related to primary */
 
-    --chart-1: 207 68% 53%; /* Primary for charts */
-    --chart-2: 145 63% 49%; /* Accent for charts */
+    --chart-1: 247 74% 52%; /* Primary for charts */
+    --chart-2: 45 100% 51%; /* Accent for charts */
     --chart-3: 210 17% 60%; /* Muted gray for charts */
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
+    --chart-4: 25 80% 55%;
+    --chart-5: 195 75% 50%;
     
-    --radius: 0.5rem;
+    --radius: 0.375rem; /* CoreUI often uses slightly less rounded corners */
 
-    /* Sidebar specific colors */
-    --sidebar-background: 222 47% 11%; /* Dark slate blue */
-    --sidebar-foreground: 210 40% 98%; /* Light text */
-    --sidebar-primary: 207 68% 53%; /* Primary color for active/hover */
-    --sidebar-primary-foreground: 210 40% 98%;
-    --sidebar-accent: 222 47% 15%; /* Slightly lighter dark slate for hover */
-    --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 222 47% 20%;
-    --sidebar-ring: 207 68% 53%;
+    /* Sidebar specific colors - CoreUI Dark Sidebar Inspired */
+    --sidebar-background: 220 25% 31%; /* Dark Slate Blue/Grey - #3c4b64 */
+    --sidebar-foreground: 0 0% 95%; /* Light text for dark sidebar */
+    --sidebar-primary: 247 74% 65%; /* Lighter blue for active/hover on dark sidebar */
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 25% 40%; /* Slightly lighter dark slate for hover */
+    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-border: 220 25% 25%;
+    --sidebar-ring: 247 74% 65%;
   }
 
   .dark {
-    --background: 240 10% 3.9%;
-    --foreground: 0 0% 98%;
+    /* CoreUI Dark Theme Inspired Palette (Illustrative) */
+    --background: 220 9% 16%; /* Dark background */
+    --foreground: 0 0% 95%; /* Light text */
 
-    --card: 240 10% 3.9%;
-    --card-foreground: 0 0% 98%;
+    --card: 220 9% 22%; /* Darker cards */
+    --card-foreground: 0 0% 95%;
 
-    --popover: 240 10% 3.9%;
-    --popover-foreground: 0 0% 98%;
+    --popover: 220 9% 22%;
+    --popover-foreground: 0 0% 95%;
 
-    --primary: 207 68% 53%; /* Keep primary blue consistent */
-    --primary-foreground: 210 40% 98%;
+    --primary: 247 74% 58%; /* Primary blue, slightly adjusted for dark */
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 0 0% 14.9%;
-    --secondary-foreground: 0 0% 98%;
+    --secondary: 220 9% 28%;
+    --secondary-foreground: 0 0% 95%;
 
-    --muted: 0 0% 14.9%;
-    --muted-foreground: 0 0% 63.9%;
+    --muted: 220 9% 28%;
+    --muted-foreground: 220 9% 65%;
 
-    --accent: 145 63% 49%; /* Keep accent green consistent */
-    --accent-foreground: 145 63% 95%;
+    --accent: 45 100% 58%; /* Accent yellow/gold, adjusted for dark */
+    --accent-foreground: 220 9% 16%;
 
-    --destructive: 0 62.8% 30.6%;
+    --destructive: 0 70% 55%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 0 0% 14.9%;
-    --input: 0 0% 14.9%;
-    --ring: 207 68% 53%; /* Ring color to match primary */
+    --border: 220 9% 30%;
+    --input: 220 9% 28%;
+    --ring: 247 74% 58%;
 
-    --chart-1: 207 68% 53%;
-    --chart-2: 145 63% 49%;
-    --chart-3: 0 0% 50%;
+    --chart-1: 247 74% 58%;
+    --chart-2: 45 100% 58%;
+    --chart-3: 210 17% 50%;
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
 
-    /* Dark Sidebar specific colors */
-    --sidebar-background: 240 5.9% 10%; /* Default dark sidebar */
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 207 68% 53%; /* Primary for active/hover */
+    /* Dark Sidebar specific colors (can be same as light if sidebar is always dark) */
+    --sidebar-background: 220 25% 31%;
+    --sidebar-foreground: 0 0% 95%;
+    --sidebar-primary: 247 74% 65%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 207 68% 53%;
+    --sidebar-accent: 220 25% 40%;
+    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-border: 220 25% 25%;
+    --sidebar-ring: 247 74% 65%;
   }
 }
 
@@ -104,6 +106,5 @@
   }
   body {
     @apply bg-background text-foreground;
-    /* font-family removed to allow Geist Sans from layout.tsx to take precedence */
   }
 }

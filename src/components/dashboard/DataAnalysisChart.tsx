@@ -38,11 +38,11 @@ const CustomTooltip = ({ active, payload, label }: TooltipProps<ValueType, NameT
 export function DataAnalysisChart({ data }: DataAnalysisChartProps) {
   return (
     <Card className="shadow-lg rounded-lg overflow-hidden col-span-1 md:col-span-2 lg:col-span-4">
-      <CardHeader className="bg-card">
+      <CardHeader>
         <CardTitle className="text-lg font-semibold text-card-foreground">Data Analysis Trends</CardTitle>
         <CardDescription className="text-sm text-muted-foreground">Number of data analyses per day over the last few months.</CardDescription>
       </CardHeader>
-      <CardContent className="h-[350px] w-full p-4 bg-card">
+      <CardContent className="h-[350px] w-full p-4">
         <ChartContainer config={chartConfig} className="h-full w-full">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart
