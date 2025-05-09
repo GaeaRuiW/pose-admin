@@ -2,8 +2,9 @@ import { mockDashboardMetrics, mockDataAnalysisChartData } from "@/lib/mockData"
 import { MetricsCard } from "@/components/dashboard/MetricsCard";
 import { DataAnalysisChart } from "@/components/dashboard/DataAnalysisChart";
 import { BriefcaseMedical, Users, Video, BarChart3 } from "lucide-react";
+import AppLayout from "@/components/layout/AppLayout";
 
-export default function DashboardPage() {
+function DashboardContent() {
   const metrics = mockDashboardMetrics;
   const chartData = mockDataAnalysisChartData;
 
@@ -38,5 +39,13 @@ export default function DashboardPage() {
       </div>
       <DataAnalysisChart data={chartData} />
     </div>
+  );
+}
+
+export default function DashboardPage() {
+  return (
+    <AppLayout>
+      <DashboardContent />
+    </AppLayout>
   );
 }

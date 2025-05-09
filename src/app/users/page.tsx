@@ -15,6 +15,8 @@ import { DoctorFormDialog, DoctorFormData } from '@/components/users/DoctorFormD
 import { PatientFormDialog, PatientFormData } from '@/components/users/PatientFormDialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
+import AppLayout from "@/components/layout/AppLayout";
+
 
 function UserManagementContent() {
   const router = useRouter();
@@ -361,8 +363,10 @@ function UserManagementContent() {
 
 export default function UserManagementPage() {
   return (
-    <Suspense fallback={<div className="flex justify-center items-center h-64 text-muted-foreground">Loading user data...</div>}>
-      <UserManagementContent />
-    </Suspense>
+    <AppLayout>
+      <Suspense fallback={<div className="flex justify-center items-center h-64 text-muted-foreground">Loading user data...</div>}>
+        <UserManagementContent />
+      </Suspense>
+    </AppLayout>
   );
 }

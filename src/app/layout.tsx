@@ -3,6 +3,7 @@ import { Inter as Geist, Inter as Geist_Mono } from 'next/font/google'; // Using
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 import AppLayout from "@/components/layout/AppLayout";
+import { AuthProvider } from '@/context/AuthContext';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -27,10 +28,12 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <AppLayout>
+        <AuthProvider>
+          {/* AppLayout is conditionally rendered based on route in specific page layouts or here */}
+          {/* For now, children might include AppLayout or LoginPage directly */}
           {children}
-        </AppLayout>
-        <Toaster />
+          <Toaster />
+        </AuthProvider>
       </body>
     </html>
   );

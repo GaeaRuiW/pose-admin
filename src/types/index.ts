@@ -33,3 +33,10 @@ export interface DashboardMetrics {
   videoCount: number;
   dataAnalysisCount: number;
 }
+
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  avatarUrl?: string;
+}

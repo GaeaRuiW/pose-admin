@@ -1,7 +1,9 @@
-"use client";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { LayoutDashboard, Users, Stethoscope } from "lucide-react";
+'use client';
+import Link from 'next/link';
+import { usePathname, useRouter } from 'next/navigation';
+import React, { useEffect } from 'react';
+import { LayoutDashboard, Users, Stethoscope } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
 import {
   SidebarProvider,
   Sidebar,
@@ -12,15 +14,37 @@ import {
   SidebarMenuButton,
   SidebarTrigger,
   SidebarInset,
-} from "@/components/ui/sidebar"; // Assuming sidebar is in ui, adjust if custom path
-import { Button } from "@/components/ui/button";
+} from '@/components/ui/sidebar';
+import { UserNav } from '@/components/layout/UserNav';
+import { Skeleton } from '@/components/ui/skeleton';
+
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const { currentUser, isLoading, logout } = useAuth();
+  const router = useRouter();
 
+  useEffect(() => {
+    if (!isLoading && !currentUser) {
+      router.push('/login');
+    }
+  }, [currentUser, isLoading, router]);
+
+  if (isLoading || !currentUser) {
+    // Show a loading state or a blank page while checking auth / redirecting
+    return (
+      <div className="flex h-screen w-screen items-center justify-center bg-background">
+        <div className="flex flex-col items-center space-y-4">
+           <Stethoscope className="h-16 w-16 text-primary animate-pulse" />
+           <p className="text-muted-foreground">Loading MediAdmin...</p>
+        </div>
+      </div>
+    );
+  }
+  
   const navItems = [
-    { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-    { href: "/users", label: "User Management", icon: Users },
+    { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { href: '/users', label: 'User Management', icon: Users },
   ];
 
   return (
@@ -41,11 +65,14 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                     isActive={pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href))}
                     className="w-full justify-start text-sm font-medium"
                     tooltip={item.label}
-                    variant={pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href)) ? "default" : "ghost"} // 'default' uses primary for active
-                    // style={{
-                    //   backgroundColor: pathname.startsWith(item.href) ? 'hsl(var(--sidebar-primary))' : 'transparent',
-                    //   color: pathname.startsWith(item.href) ? 'hsl(var(--sidebar-primary-foreground))' : 'hsl(var(--sidebar-foreground))'
-                    // }}
+                    // Use sidebar-primary for active state, defined in globals.css
+                    variant={pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href)) ? "default" : "ghost"}
+                    // Custom styling for active and hover states to align with CoreUI
+                    style={
+                      (pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href))) ? 
+                      { backgroundColor: 'hsl(var(--sidebar-primary))', color: 'hsl(var(--sidebar-primary-foreground))' } : 
+                      { backgroundColor: 'transparent', color: 'hsl(var(--sidebar-foreground))' }
+                    }
                   >
                     <item.icon className="h-5 w-5 mr-2" />
                     <span>{item.label}</span>
@@ -58,12 +85,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       </Sidebar>
 
       <SidebarInset>
-        <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background px-4 sm:px-6">
+        <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background px-4 sm:px-6">
           <SidebarTrigger className="md:hidden" />
-          {/* Placeholder for potential breadcrumbs or page title */}
           <div className="flex-1">
-             {/* Dynamically set page title based on route maybe? */}
+            {/* Placeholder for breadcrumbs or dynamic page title if needed */}
           </div>
+          <UserNav />
         </header>
         <main className="flex-1 p-4 sm:p-6 bg-background min-h-[calc(100vh-4rem)]">
           {children}
