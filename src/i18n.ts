@@ -11,15 +11,14 @@ export default getRequestConfig(async ({locale}) => {
   if (!locales.includes(locale as any)) notFound();
 
   try {
-    // Using path alias to ensure consistent resolution
-    const messages = (await import(`@/messages/${locale}.json`)).default;
+    // Using relative path from src/i18n.ts to src/messages/
+    const messages = (await import(`./messages/${locale}.json`)).default;
     return {
       messages
     };
   } catch (error) {
     // If messages fail to load, treat as not found
-    console.error(`Failed to load messages for locale ${locale} (tried with path alias @/messages/):`, error);
+    console.error(`Failed to load messages for locale ${locale} (tried with relative path ./messages/):`, error);
     notFound();
   }
 });
-
