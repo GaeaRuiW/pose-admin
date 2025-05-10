@@ -4,7 +4,7 @@
 
 import React, { useEffect, useMemo, useState, Suspense, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import type { Analysis, Patient, Video } from '@/types'; // Assuming Analysis type is defined
+import type { Analysis, Patient, Video } from '@/types'; 
 import { AnalysesTable } from '@/components/analyses/AnalysesTable';
 import { Input } from '@/components/ui/input';
 import { Search, AlertCircle } from 'lucide-react';
@@ -31,12 +31,11 @@ function AnalysisManagementContent() {
   
   const filterPatientIdParam = searchParams.get('patientId');
   const filterVideoIdParam = searchParams.get('videoId');
+  const filterAnalysisIdParam = searchParams.get('analysisId');
+  const filterParentIdParam = searchParams.get('parentId');
 
 
   const [analyses, setAnalyses] = useState<Analysis[]>([]);
-  // const [patients, setPatients] = useState<Patient[]>([]); // May need if filtering by patient name directly or showing patient dropdown
-  // const [videos, setVideos] = useState<Video[]>([]); // May need if filtering by video name directly
-
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -105,17 +104,25 @@ function AnalysisManagementContent() {
 
   const displayedAnalyses = useMemo(() => {
     let filtered = analyses;
+
     if (filterPatientIdParam) {
       filtered = filtered.filter(analysis => analysis.patient_id === filterPatientIdParam);
     }
-    if (filterVideoIdParam) {
+    if (filterVideoIdParam) { // This refers to original video_id
       filtered = filtered.filter(analysis => analysis.video_id === filterVideoIdParam);
+    }
+    if (filterAnalysisIdParam) {
+        filtered = filtered.filter(analysis => analysis.id === filterAnalysisIdParam);
+    }
+    if (filterParentIdParam) {
+        filtered = filtered.filter(analysis => analysis.parent_id === filterParentIdParam);
     }
     
     if (searchTerm) {
       const lowerSearchTerm = searchTerm.toLowerCase();
       filtered = filtered.filter(analysis =>
         (analysis.id.toString().toLowerCase() || '').includes(lowerSearchTerm) ||
+        (analysis.parent_id?.toString().toLowerCase() || '').includes(lowerSearchTerm) ||
         (analysis.patient_username?.toLowerCase() || '').includes(lowerSearchTerm) ||
         (analysis.status?.toLowerCase() || '').includes(lowerSearchTerm) ||
         (analysis.progress?.toLowerCase() || '').includes(lowerSearchTerm) ||
@@ -126,16 +133,17 @@ function AnalysisManagementContent() {
     const analysisKeyAccessor = (analysis: Analysis, key: string) => {
         switch(key) {
             case 'id': return parseInt(analysis.id);
+            case 'parent_id': return analysis.parent_id ? parseInt(analysis.parent_id) : null;
             case 'patient_username': return analysis.patient_username;
             case 'video_id': return analysis.original_video_path?.split('/').pop(); // Sort by filename
             case 'status': return analysis.status;
-            case 'progress': return analysis.progress;
+            case 'progress': return analysis.progress; // Not sortable as per table def
             case 'create_time': return analysis.create_time;
             default: return (analysis as any)[key];
         }
     }
     return sortData(filtered, sortConfig, analysisKeyAccessor);
-  }, [analyses, filterPatientIdParam, filterVideoIdParam, searchTerm, sortConfig]);
+  }, [analyses, filterPatientIdParam, filterVideoIdParam, filterAnalysisIdParam, filterParentIdParam, searchTerm, sortConfig]);
 
 
   const handleDeleteAnalysis = (analysisId: string) => setDeletingAnalysisId(analysisId);
@@ -147,7 +155,7 @@ function AnalysisManagementContent() {
         action_id: parseInt(deletingAnalysisId),
     };
     try {
-      const response = await fetch(`${API_BASE_URL}/management/action`, { // Assuming endpoint is /management/action for delete
+      const response = await fetch(`${API_BASE_URL}/management/action`, { 
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -157,7 +165,7 @@ function AnalysisManagementContent() {
         throw new Error(errorData.detail || `Failed to delete analysis: ${response.statusText}`);
       }
       toast({ title: "Analysis Deleted", description: `Analysis ${deletingAnalysisId} has been deleted.`, variant: "destructive" });
-      fetchAnalyses(); // Refresh analysis list
+      fetchAnalyses(); 
     } catch (e) {
       toast({ title: "Error", description: (e as Error).message, variant: "destructive" });
     }
@@ -188,10 +196,9 @@ function AnalysisManagementContent() {
       </div>
     )
   }
-
-  // TODO: Add logic to fetch patient/video names for filter descriptions if params are present
-  // const patientForFilteredAnalyses = ...
-  // const videoForFilteredAnalyses = ...
+  
+  const patientForFiltered = filterPatientIdParam ? analyses.find(a => a.patient_id === filterPatientIdParam)?.patient_username : null;
+  const videoForFiltered = filterVideoIdParam ? analyses.find(a => a.video_id === filterVideoIdParam)?.original_video_path?.split('/').pop() : null;
 
   return (
     <div className="flex flex-col gap-6">
@@ -208,10 +215,48 @@ function AnalysisManagementContent() {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          {/* Add Analysis Button can be added here if needed (e.g. re-run) */}
       </div>
 
-      {/* TODO: Add filter description notices here if patientIdParam or videoIdParam is active */}
+      {filterPatientIdParam && patientForFiltered && (
+        <div className="mb-4 p-3 bg-primary/10 border border-primary/20 rounded-md flex justify-between items-center">
+          <p className="text-sm text-primary font-medium">
+            Showing analyses for patient: {patientForFiltered}.
+          </p>
+          <Button variant="ghost" size="sm" className="text-primary hover:bg-primary/20" onClick={() => router.push('/analyses')}>
+            Show All Analyses
+          </Button>
+        </div>
+      )}
+       {filterVideoIdParam && videoForFiltered && (
+        <div className="mb-4 p-3 bg-primary/10 border border-primary/20 rounded-md flex justify-between items-center">
+          <p className="text-sm text-primary font-medium">
+            Showing analyses for video: {videoForFiltered}.
+          </p>
+          <Button variant="ghost" size="sm" className="text-primary hover:bg-primary/20" onClick={() => router.push('/analyses')}>
+            Show All Analyses
+          </Button>
+        </div>
+      )}
+      {filterAnalysisIdParam && (
+        <div className="mb-4 p-3 bg-primary/10 border border-primary/20 rounded-md flex justify-between items-center">
+          <p className="text-sm text-primary font-medium">
+            Showing details for Analysis ID: {filterAnalysisIdParam}.
+          </p>
+          <Button variant="ghost" size="sm" className="text-primary hover:bg-primary/20" onClick={() => router.push('/analyses')}>
+            Show All Analyses
+          </Button>
+        </div>
+      )}
+      {filterParentIdParam && (
+        <div className="mb-4 p-3 bg-primary/10 border border-primary/20 rounded-md flex justify-between items-center">
+          <p className="text-sm text-primary font-medium">
+            Showing analyses with Parent ID: {filterParentIdParam}.
+          </p>
+          <Button variant="ghost" size="sm" className="text-primary hover:bg-primary/20" onClick={() => router.push('/analyses')}>
+            Show All Analyses
+          </Button>
+        </div>
+      )}
       
       <AnalysesTable 
         analyses={displayedAnalyses}

@@ -6,6 +6,7 @@ import React, { useEffect, useMemo, useState, Suspense, useCallback } from 'reac
 import { useSearchParams, useRouter } from 'next/navigation';
 import type { Video, Patient } from '@/types';
 import { VideosTable } from '@/components/videos/VideosTable';
+import { VideoPlayerModal } from '@/components/videos/VideoPlayerModal'; // Import the modal
 import { Input } from '@/components/ui/input';
 import { Search, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -30,14 +31,20 @@ function VideoManagementContent() {
   const { currentUser } = useAuth(); 
   
   const filterPatientIdParam = searchParams.get('patientId');
+  const filterVideoIdParam = searchParams.get('videoId'); // For potential deep linking to a specific video
 
   const [videos, setVideos] = useState<Video[]>([]);
-  const [patients, setPatients] = useState<Patient[]>([]); // To get patient name for filterPatientIdParam
+  const [patients, setPatients] = useState<Patient[]>([]); 
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [deletingVideoId, setDeletingVideoId] = useState<string | null>(null);
   const [sortConfig, setSortConfig] = useState<SortConfig | null>(null);
+
+  const [isVideoPlayerOpen, setIsVideoPlayerOpen] = useState(false);
+  const [currentVideoUrl, setCurrentVideoUrl] = useState<string | null>(null);
+  const [currentVideoTitle, setCurrentVideoTitle] = useState<string | undefined>(undefined);
+
 
   const fetchVideosAndPatients = useCallback(async () => {
     if (!currentUser?.id) return;
@@ -46,7 +53,7 @@ function VideoManagementContent() {
     try {
       const [videosResponse, patientsResponse] = await Promise.all([
         fetch(`${API_BASE_URL}/management/videos?admin_doctor_id=${currentUser.id}`),
-        fetch(`${API_BASE_URL}/management/patients?admin_doctor_id=${currentUser.id}`) // Fetch patients for names
+        fetch(`${API_BASE_URL}/management/patients?admin_doctor_id=${currentUser.id}`) 
       ]);
 
       if (!videosResponse.ok) {
@@ -63,13 +70,21 @@ function VideoManagementContent() {
       const patientsData: Patient[] = await patientsResponse.json();
       setPatients(patientsData.map(p => ({...p, id: String(p.id)})));
 
+      if (filterVideoIdParam) {
+        const videoToPlay = videosData.find(v => String(v.id) === filterVideoIdParam);
+        if (videoToPlay) {
+            handlePlayVideo(videoToPlay);
+        }
+      }
+
+
     } catch (e) {
       setError((e as Error).message);
       toast({ title: "Error", description: (e as Error).message, variant: "destructive" });
     } finally {
       setIsLoading(false);
     }
-  }, [currentUser?.id, toast]);
+  }, [currentUser?.id, toast, filterVideoIdParam]);
 
   useEffect(() => {
     fetchVideosAndPatients();
@@ -126,7 +141,7 @@ function VideoManagementContent() {
             case 'create_time': return video.create_time;
             case 'patient_username': return video.patient_username;
             case 'video_type': return video.original_video ? 'Original' : (video.inference_video ? 'Analysis' : 'Unknown');
-            case 'action_id': return video.action_id;
+            case 'action_id': return video.action_id ? parseInt(video.action_id) : null;
             default: return (video as any)[key];
         }
     }
@@ -148,7 +163,7 @@ function VideoManagementContent() {
     const payload = {
         admin_doctor_id: parseInt(currentUser.id),
         video_id: parseInt(deletingVideoId),
-        force: false // Use soft delete for now
+        force: false 
     };
     try {
       const response = await fetch(`${API_BASE_URL}/management/video`, {
@@ -161,11 +176,19 @@ function VideoManagementContent() {
         throw new Error(errorData.detail || `Failed to delete video: ${response.statusText}`);
       }
       toast({ title: "Video Deleted", description: `Video has been deleted.`, variant: "destructive" });
-      fetchVideosAndPatients(); // Refresh video list
+      fetchVideosAndPatients(); 
     } catch (e) {
       toast({ title: "Error", description: (e as Error).message, variant: "destructive" });
     }
     setDeletingVideoId(null);
+  };
+
+  const handlePlayVideo = (video: Video) => {
+    const videoTypeStr = video.original_video ? "original" : "inference";
+    const videoUrl = `${API_BASE_URL}/videos/stream/${videoTypeStr}/${video.patient_id}/${video.id}`;
+    setCurrentVideoUrl(videoUrl);
+    setCurrentVideoTitle(video.video_path.split('/').pop() || `Video ID: ${video.id}`);
+    setIsVideoPlayerOpen(true);
   };
 
 
@@ -208,7 +231,6 @@ function VideoManagementContent() {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          {/* Add Video Button can be added here if needed */}
       </div>
 
       {filterPatientIdParam && patientForFilteredVideos && (
@@ -230,6 +252,7 @@ function VideoManagementContent() {
       <VideosTable 
         videos={displayedVideos}
         onDelete={handleDeleteVideo}
+        onPlayVideo={handlePlayVideo}
         sortConfig={sortConfig}
         onSort={handleSort}
         apiBaseUrl={API_BASE_URL}
@@ -249,6 +272,13 @@ function VideoManagementContent() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <VideoPlayerModal 
+        isOpen={isVideoPlayerOpen}
+        onOpenChange={setIsVideoPlayerOpen}
+        videoUrl={currentVideoUrl}
+        videoTitle={currentVideoTitle}
+      />
     </div>
   );
 }

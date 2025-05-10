@@ -4,7 +4,7 @@
 import type { Analysis } from "@/types";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Trash2, MoreHorizontal, ArrowUp, ArrowDown, ChevronsUpDown, ExternalLink, Info } from "lucide-react";
+import { Trash2, MoreHorizontal, ArrowUp, ArrowDown, ChevronsUpDown, Info, ExternalLink } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { format } from 'date-fns';
@@ -57,8 +57,9 @@ export function AnalysesTable({ analyses, onDelete, sortConfig, onSort }: Analys
   
   const headers = [
     { key: 'id', label: 'Analysis ID', className: 'w-[120px]' },
+    { key: 'parent_id', label: 'Parent ID', className: 'w-[120px]' },
     { key: 'patient_username', label: 'Patient', className: 'w-[180px]' },
-    { key: 'video_id', label: 'Original Video', className: 'w-[200px]' }, // Will display filename from original_video_path
+    { key: 'video_id', label: 'Original Video', className: 'w-[200px]' }, 
     { key: 'status', label: 'Status', className: 'w-[120px]' },
     { key: 'progress', label: 'Progress', className: 'w-[200px]', sortable: false },
     { key: 'create_time', label: 'Created Date', className: 'w-[180px]' },
@@ -95,8 +96,17 @@ export function AnalysesTable({ analyses, onDelete, sortConfig, onSort }: Analys
             analyses.map((analysis) => (
               <TableRow key={analysis.id} className="hover:bg-muted/30 transition-colors">
                 <TableCell className="font-mono text-sm text-foreground">{analysis.id}</TableCell>
+                <TableCell className="font-mono text-sm text-muted-foreground">
+                  {analysis.parent_id && analysis.parent_id !== analysis.id ? (
+                    <Link href={`/analyses?parentId=${analysis.parent_id}`} className="hover:underline text-primary">
+                      {analysis.parent_id}
+                    </Link>
+                  ) : (
+                    analysis.parent_id ? analysis.parent_id : '-'
+                  )}
+                </TableCell>
                 <TableCell className="text-muted-foreground">
-                  <Link href={`/users?tab=patients&scrollToPatientId=${analysis.patient_id}`} className="hover:underline text-primary">
+                  <Link href={`/users?tab=patients&patientId=${analysis.patient_id}`} className="hover:underline text-primary">
                     {analysis.patient_username || 'N/A'}
                   </Link>
                 </TableCell>
@@ -104,7 +114,7 @@ export function AnalysesTable({ analyses, onDelete, sortConfig, onSort }: Analys
                    <Tooltip delayDuration={100}>
                     <TooltipTrigger asChild>
                       <Link href={`/videos?videoId=${analysis.video_id}`} className="hover:underline text-primary truncate block max-w-[180px]">
-                        {analysis.original_video_path?.split('/').pop() || 'N/A'}
+                        {analysis.original_video_path?.split('/').pop() || `Video ID: ${analysis.video_id}`}
                       </Link>
                     </TooltipTrigger>
                     <TooltipContent side="top" align="start">
@@ -132,13 +142,17 @@ export function AnalysesTable({ analyses, onDelete, sortConfig, onSort }: Analys
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => alert(`View details for Analysis ID: ${analysis.id}`)}> {/* Placeholder */}
+                       <DropdownMenuItem onClick={() => alert(`View details for Analysis ID: ${analysis.id}`)}> {/* Placeholder */}
                         <Info className="mr-2 h-4 w-4" /> View Details
                       </DropdownMenuItem>
-                       {/* Placeholder for re-running analysis if applicable */}
-                      {/* <DropdownMenuItem onClick={() => alert(`Re-run Analysis ID: ${analysis.id}`)}>
-                        <RefreshCw className="mr-2 h-4 w-4" /> Re-run
-                      </DropdownMenuItem> */}
+                       {/* Link to view the inference video if available */}
+                       {analysis.status?.toLowerCase() === 'completed' || analysis.status?.toLowerCase() === 'finished' ? (
+                         <DropdownMenuItem asChild>
+                           <Link href={`/videos?videoId=${analysis.video_id}&playInference=true`}> {/* Assuming inference video might be linked via action_id or a convention */}
+                             <ExternalLink className="mr-2 h-4 w-4" /> View Processed Video
+                           </Link>
+                         </DropdownMenuItem>
+                       ) : null}
                       <DropdownMenuItem onClick={() => onDelete(analysis.id)} className="text-destructive focus:text-destructive focus:bg-destructive/10">
                         <Trash2 className="mr-2 h-4 w-4" /> Delete
                       </DropdownMenuItem>

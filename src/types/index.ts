@@ -74,3 +74,4 @@ export interface Analysis { // Represents an Action from backend
   create_time: string;
   update_time: string;
 }
+
