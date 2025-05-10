@@ -19,15 +19,15 @@ import {
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea"; // Import Textarea
+import { Textarea } from "@/components/ui/textarea";
 
 const patientFormSchema = z.object({
-  username: z.string().min(2, { message: "Name must be at least 2 characters." }),
-  age: z.coerce.number().min(0, { message: "Age must be a positive number." }).max(120),
-  gender: z.enum(['Male', 'Female', 'Other']),
-  case_id: z.string().min(3, { message: "Case ID/MRN must be at least 3 characters." }),
-  doctor_id: z.string().min(1, { message: "Please select an attending doctor." }),
-  notes: z.string().optional().nullable(), // Added notes field to schema
+  username: z.string().min(1, "Name is required.").min(2, { message: "Name must be at least 2 characters." }),
+  age: z.coerce.number().min(0, "Age cannot be negative.").optional().nullable(),
+  gender: z.enum(['Male', 'Female', 'Other']).optional().nullable(),
+  case_id: z.string().min(1, "Case ID is required.").min(3, { message: "Case ID/MRN must be at least 3 characters." }),
+  doctor_id: z.string().optional().nullable().or(z.literal('')), // Can be empty string, null, or undefined
+  notes: z.string().optional().nullable(),
 });
 
 export type PatientFormData = z.infer<typeof patientFormSchema>;
@@ -45,18 +45,55 @@ export function PatientFormDialog({ open, onOpenChange, onSubmit, defaultValues,
     resolver: zodResolver(patientFormSchema),
     defaultValues: {
       username: defaultValues?.username || "",
-      age: defaultValues?.age || 0,
-      gender: defaultValues?.gender || "Other",
+      age: defaultValues?.age ?? undefined, // Use undefined for optional number to clear field
+      gender: defaultValues?.gender || undefined, // Use undefined for optional enum
       case_id: defaultValues?.case_id || "",
-      doctor_id: defaultValues?.doctor_id || "",
-      notes: defaultValues?.notes || "", // Added default value for notes
+      doctor_id: defaultValues?.doctor_id || "", // Empty string for select placeholder
+      notes: defaultValues?.notes || "",
     },
   });
 
   const handleSubmit = (data: PatientFormData) => {
-    onSubmit(data);
-    form.reset();
+    const submissionData = {
+      ...data,
+      age: data.age === undefined || data.age === null || isNaN(data.age) ? null : Number(data.age),
+      gender: data.gender === undefined || data.gender === null ? null : data.gender,
+      doctor_id: data.doctor_id === "" || data.doctor_id === undefined || data.doctor_id === null ? null : data.doctor_id,
+      notes: data.notes === "" || data.notes === undefined || data.notes === null ? null : data.notes,
+    };
+    onSubmit(submissionData as PatientFormData); // Cast because doctor_id might be null now
+    form.reset({ 
+        username: "", 
+        age: undefined, 
+        gender: undefined, 
+        case_id: "", 
+        doctor_id: "",
+        notes: "" 
+    });
   };
+  
+  React.useEffect(() => {
+    if (defaultValues) {
+      form.reset({
+        username: defaultValues.username || "",
+        age: defaultValues.age ?? undefined,
+        gender: defaultValues.gender || undefined,
+        case_id: defaultValues.case_id || "",
+        doctor_id: defaultValues.doctor_id || "",
+        notes: defaultValues.notes || "",
+      });
+    } else {
+      form.reset({
+        username: "",
+        age: undefined,
+        gender: undefined,
+        case_id: "",
+        doctor_id: "",
+        notes: "",
+      });
+    }
+  }, [defaultValues, form, open]);
+
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -74,7 +111,7 @@ export function PatientFormDialog({ open, onOpenChange, onSubmit, defaultValues,
               name="username"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Patient Name</FormLabel>
+                  <FormLabel>Patient Name <span className="text-destructive">*</span></FormLabel>
                   <FormControl>
                     <Input placeholder="Jane Roe" {...field} className="bg-background border-input"/>
                   </FormControl>
@@ -90,7 +127,7 @@ export function PatientFormDialog({ open, onOpenChange, onSubmit, defaultValues,
                   <FormItem>
                     <FormLabel>Age</FormLabel>
                     <FormControl>
-                      <Input type="number" placeholder="30" {...field} className="bg-background border-input"/>
+                      <Input type="number" placeholder="30" {...field} onChange={e => field.onChange(e.target.value === '' ? null : +e.target.value)} value={field.value ?? ''} className="bg-background border-input"/>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -102,7 +139,7 @@ export function PatientFormDialog({ open, onOpenChange, onSubmit, defaultValues,
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Gender</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value ?? undefined} defaultValue={field.value ?? undefined}>
                       <FormControl>
                         <SelectTrigger className="bg-background border-input">
                           <SelectValue placeholder="Select gender" />
@@ -124,7 +161,7 @@ export function PatientFormDialog({ open, onOpenChange, onSubmit, defaultValues,
               name="case_id"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Case ID / Medical Record Number</FormLabel>
+                  <FormLabel>Case ID / Medical Record Number <span className="text-destructive">*</span></FormLabel>
                   <FormControl>
                     <Input placeholder="MRN12345" {...field} className="bg-background border-input"/>
                   </FormControl>
@@ -138,13 +175,14 @@ export function PatientFormDialog({ open, onOpenChange, onSubmit, defaultValues,
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Attending Doctor</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <Select onValueChange={field.onChange} value={field.value ?? ""} defaultValue={field.value ?? ""}>
                     <FormControl>
                       <SelectTrigger className="bg-background border-input">
                         <SelectValue placeholder="Select doctor" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
+                      <SelectItem value=""><em>None</em></SelectItem>
                       {doctors.map(doctor => (
                         <SelectItem key={doctor.id} value={doctor.id.toString()}>
                           {doctor.username} - {doctor.department}
@@ -171,7 +209,7 @@ export function PatientFormDialog({ open, onOpenChange, onSubmit, defaultValues,
               )}
             />
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+              <Button type="button" variant="outline" onClick={() => { form.reset(); onOpenChange(false); }}>Cancel</Button>
               <Button type="submit">{defaultValues ? 'Save Changes' : 'Add Patient'}</Button>
             </DialogFooter>
           </form>

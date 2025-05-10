@@ -1,4 +1,5 @@
 
+
 import os
 from datetime import datetime
 from typing import Optional
@@ -20,9 +21,9 @@ class CreateDoctorManagement(BASE):
     username: str
     password: str
     email: str
-    phone: str
-    department: str = "康复科"
-    role_id: int = 2  # Default to Doctor role
+    phone: Optional[str] = None
+    department: Optional[str] = None  # Changed from "康复科"
+    role_id: Optional[int] = None     # Changed from 2
     notes: Optional[str] = None
 
 class UpdateDoctor(BASE):
@@ -31,7 +32,7 @@ class UpdateDoctor(BASE):
     email: Optional[str] = None
     phone: Optional[str] = None
     password: Optional[str] = None 
-    department: Optional[str] = "康复科"
+    department: Optional[str] = None # Already optional, ensure no default if not intended
     role_id: Optional[int] = None
     notes: Optional[str] = None
 
@@ -42,11 +43,11 @@ class DeleteDoctor(BASE):
 # --- Patient Management Models ---
 class CreatePatientManagement(BASE):
     username: str
-    age: int
-    gender: str
+    age: Optional[int] = None       # Changed from int
+    gender: Optional[str] = None    # Changed from str
     case_id: str
-    doctor_id: int 
-    notes: Optional[str] = None # Added notes field
+    doctor_id: Optional[int] = None # Changed from int
+    notes: Optional[str] = None 
 
 class UpdatePatient(BASE):
     patient_id: int 
@@ -55,11 +56,7 @@ class UpdatePatient(BASE):
     gender: Optional[str] = None
     case_id: Optional[str] = None 
     doctor_id: Optional[int] = None
-    notes: Optional[str] = None # Added notes field
-
-class DeletePatient(BASE):
-    patient_id: int
-    force: bool = False 
+    notes: Optional[str] = None
 
 # --- Other Models ---
 class Login(BaseModel):
@@ -142,7 +139,7 @@ async def create_doctor_management(doctor_data: CreateDoctorManagement, session:
         email=doctor_data.email,
         phone=doctor_data.phone,
         department=doctor_data.department,
-        role_id=doctor_data.role_id,
+        role_id=doctor_data.role_id if doctor_data.role_id is not None else 2, # Default to Doctor role if not provided
         notes=doctor_data.notes,
         create_time=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         update_time=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
@@ -179,11 +176,11 @@ def update_doctor(doctor_update_data: UpdateDoctor, session: SessionDep = Sessio
             raise HTTPException(status_code=400, detail="Email already taken by another doctor.")
         doctor_db.email = doctor_update_data.email
 
-    if doctor_update_data.phone:
+    if doctor_update_data.phone is not None: # Allow setting phone to empty or new value
         doctor_db.phone = doctor_update_data.phone
-    if doctor_update_data.password:
+    if doctor_update_data.password: # Only update password if provided
         doctor_db.password = hash_password(doctor_update_data.password) 
-    if doctor_update_data.department:
+    if doctor_update_data.department is not None: # Allow setting department to empty or new value
         doctor_db.department = doctor_update_data.department
     if doctor_update_data.role_id is not None:
         doctor_db.role_id = doctor_update_data.role_id
@@ -242,8 +239,12 @@ def get_patients(admin_doctor_id: int = Query(...), session: SessionDep = Sessio
     result = []
     for patient in patients_db:
         pat_dict = patient.to_dict()
-        doctor = session.query(Doctors.username).filter(Doctors.id == patient.doctor_id, Doctors.is_deleted == False).scalar()
-        pat_dict["attendingDoctorName"] = doctor if doctor else "N/A"
+        doctor_username = "N/A"
+        if patient.doctor_id:
+            doctor = session.query(Doctors.username).filter(Doctors.id == patient.doctor_id, Doctors.is_deleted == False).scalar()
+            if doctor:
+                doctor_username = doctor
+        pat_dict["attendingDoctorName"] = doctor_username
         
         pat_dict["videoCount"] = session.query(VideoPath).filter(VideoPath.patient_id == patient.id, VideoPath.is_deleted == False).count()
         pat_dict["analysisCount"] = session.query(Action).filter(Action.patient_id == patient.id, Action.is_deleted == False).count()
@@ -258,9 +259,13 @@ async def create_patient_management(patient_data: CreatePatientManagement, sessi
     if existing_patient:
         raise HTTPException(status_code=400, detail="Case ID already exists")
     
-    assigned_doctor = session.query(Doctors).filter(Doctors.id == patient_data.doctor_id, Doctors.is_deleted == False).first()
-    if not assigned_doctor:
-        raise HTTPException(status_code=404, detail="Assigned doctor not found")
+    assigned_doctor_username = "N/A"
+    if patient_data.doctor_id:
+        assigned_doctor = session.query(Doctors).filter(Doctors.id == patient_data.doctor_id, Doctors.is_deleted == False).first()
+        if not assigned_doctor:
+            raise HTTPException(status_code=404, detail="Assigned doctor not found")
+        assigned_doctor_username = assigned_doctor.username
+
 
     new_patient = Patients(
         username=patient_data.username,
@@ -268,7 +273,7 @@ async def create_patient_management(patient_data: CreatePatientManagement, sessi
         gender=patient_data.gender,
         case_id=patient_data.case_id,
         doctor_id=patient_data.doctor_id,
-        notes=patient_data.notes, # Added notes
+        notes=patient_data.notes, 
         create_time=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         update_time=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         is_deleted=False
@@ -278,10 +283,9 @@ async def create_patient_management(patient_data: CreatePatientManagement, sessi
     session.refresh(new_patient)
     
     pat_dict = new_patient.to_dict()
-    pat_dict["attendingDoctorName"] = assigned_doctor.username
+    pat_dict["attendingDoctorName"] = assigned_doctor_username
     pat_dict["videoCount"] = 0
     pat_dict["analysisCount"] = 0
-    # pat_dict["notes"] is already in to_dict()
     return pat_dict
 
 
@@ -296,9 +300,9 @@ def update_patient(patient_update_data: UpdatePatient, session: SessionDep = Ses
 
     if patient_update_data.username:
         patient_db.username = patient_update_data.username
-    if patient_update_data.age is not None:
+    if patient_update_data.age is not None: # Allows setting age to 0 or other valid numbers
         patient_db.age = patient_update_data.age
-    if patient_update_data.gender:
+    if patient_update_data.gender is not None: # Allows setting gender to empty string or new value
         patient_db.gender = patient_update_data.gender
     
     if patient_update_data.case_id and patient_update_data.case_id != patient_db.case_id:
@@ -307,13 +311,19 @@ def update_patient(patient_update_data: UpdatePatient, session: SessionDep = Ses
             raise HTTPException(status_code=400, detail="Case ID already taken by another patient.")
         patient_db.case_id = patient_update_data.case_id
         
-    if patient_update_data.doctor_id is not None:
-        new_assigned_doctor = session.query(Doctors).filter(Doctors.id == patient_update_data.doctor_id, Doctors.is_deleted == False).first()
-        if not new_assigned_doctor:
-            raise HTTPException(status_code=404, detail="New assigned doctor not found")
-        patient_db.doctor_id = patient_update_data.doctor_id
-    
-    if patient_update_data.notes is not None: # Allow setting notes to empty string or null
+    # Handle doctor_id update, including setting to None
+    if patient_update_data.doctor_id is not None: # doctor_id provided in payload
+        if patient_update_data.doctor_id == 0: # Assuming 0 or a specific value means "set to null" if frontend sends it like that. Or frontend sends null.
+             patient_db.doctor_id = None
+        else:
+            new_assigned_doctor = session.query(Doctors).filter(Doctors.id == patient_update_data.doctor_id, Doctors.is_deleted == False).first()
+            if not new_assigned_doctor:
+                raise HTTPException(status_code=404, detail="New assigned doctor not found")
+            patient_db.doctor_id = patient_update_data.doctor_id
+    elif 'doctor_id' in patient_update_data.model_fields_set and patient_update_data.doctor_id is None: # doctor_id is explicitly set to null in payload
+        patient_db.doctor_id = None
+
+    if patient_update_data.notes is not None: 
         patient_db.notes = patient_update_data.notes
 
     patient_db.update_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -321,11 +331,14 @@ def update_patient(patient_update_data: UpdatePatient, session: SessionDep = Ses
     session.refresh(patient_db)
 
     pat_dict = patient_db.to_dict()
-    current_doctor = session.query(Doctors.username).filter(Doctors.id == patient_db.doctor_id, Doctors.is_deleted == False).scalar()
-    pat_dict["attendingDoctorName"] = current_doctor if current_doctor else "N/A"
+    current_doctor_username = "N/A"
+    if patient_db.doctor_id:
+        current_doctor = session.query(Doctors.username).filter(Doctors.id == patient_db.doctor_id, Doctors.is_deleted == False).scalar()
+        if current_doctor:
+            current_doctor_username = current_doctor
+    pat_dict["attendingDoctorName"] = current_doctor_username
     pat_dict["videoCount"] = session.query(VideoPath).filter(VideoPath.patient_id == patient_db.id, VideoPath.is_deleted == False).count()
     pat_dict["analysisCount"] = session.query(Action).filter(Action.patient_id == patient_db.id, Action.is_deleted == False).count()
-    # pat_dict["notes"] is already in to_dict()
     return pat_dict
 
 
@@ -413,8 +426,12 @@ def get_patient_by_id(patient_id: int = Query(...),
         raise HTTPException(status_code=404, detail="Patient not found")
     
     pat_dict = patient.to_dict()
-    doctor_name = session.query(Doctors.username).filter(Doctors.id == patient.doctor_id).scalar()
-    pat_dict["attendingDoctorName"] = doctor_name if doctor_name else "N/A"
+    doctor_name = "N/A"
+    if patient.doctor_id:
+        doc_username = session.query(Doctors.username).filter(Doctors.id == patient.doctor_id).scalar()
+        if doc_username:
+             doctor_name = doc_username
+    pat_dict["attendingDoctorName"] = doctor_name
     pat_dict["videoCount"] = session.query(VideoPath).filter(VideoPath.patient_id == patient.id, VideoPath.is_deleted == False).count()
     pat_dict["analysisCount"] = session.query(Action).filter(Action.patient_id == patient.id, Action.is_deleted == False).count()
 
@@ -527,4 +544,5 @@ def delete_action(action_del_data: DeleteAction, session: SessionDep = SessionDe
 
     session.commit()
     return {"message": "Action deleted successfully"}
+
 

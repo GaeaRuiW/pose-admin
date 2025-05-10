@@ -6,7 +6,7 @@ import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import type { Doctor } from '@/types'; // Use the updated Doctor type
+import type { Doctor } from '@/types';
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -21,36 +21,39 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 
-// Mapping frontend permission strings to backend role_id
 const permissionToRoleId = {
   'Admin': 1,
   'Doctor': 2,
 };
-const roleIdToPermission = {
-  1: 'Admin',
-  2: 'Doctor',
-};
 
-const doctorFormSchema = z.object({
-  username: z.string().min(2, { message: "Username must be at least 2 characters." }),
-  email: z.string().email({ message: "Invalid email address." }),
-  password: z.string().optional(), 
-  phone: z.string().min(10, { message: "Phone number must be at least 10 digits." }),
-  department: z.string().min(2, { message: "Department must be at least 2 characters." }),
-  role_id: z.nativeEnum(permissionToRoleId).or(z.number().min(1)), // Store as number, validate against keys of mapping
+// Schema factory to handle conditional password requirement
+const createDoctorFormSchema = (isEditing: boolean) => z.object({
+  username: z.string().min(1, "Username is required.").min(2, { message: "Username must be at least 2 characters." }),
+  email: z.string().min(1, "Email is required.").email({ message: "Invalid email address." }),
+  password: isEditing
+    ? z.string().min(6, { message: "New password must be at least 6 characters." }).optional().or(z.literal(''))
+    : z.string().min(6, { message: "Password must be at least 6 characters." }),
+  phone: z.string().optional().or(z.literal('')),
+  department: z.string().optional().or(z.literal('')),
+  role_id: z.union([z.nativeEnum(permissionToRoleId), z.number().min(1), z.string().regex(/^\d+$/).transform(Number)])
+           .optional()
+           .nullable(),
   notes: z.string().optional().nullable(),
 });
 
-export type DoctorFormData = z.infer<typeof doctorFormSchema>;
+export type DoctorFormData = z.infer<ReturnType<typeof createDoctorFormSchema>>;
 
 interface DoctorFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSubmit: (data: DoctorFormData) => void;
-  defaultValues?: Doctor | null; // Doctor type from src/types
+  defaultValues?: Doctor | null;
 }
 
 export function DoctorFormDialog({ open, onOpenChange, onSubmit, defaultValues }: DoctorFormDialogProps) {
+  const isEditing = !!defaultValues;
+  const doctorFormSchema = createDoctorFormSchema(isEditing);
+
   const form = useForm<DoctorFormData>({
     resolver: zodResolver(doctorFormSchema),
     defaultValues: {
@@ -58,21 +61,49 @@ export function DoctorFormDialog({ open, onOpenChange, onSubmit, defaultValues }
       email: defaultValues?.email || "",
       password: "", // Always blank for edit, or for new
       phone: defaultValues?.phone || "",
-      department: defaultValues?.department || "康复科",
-      role_id: defaultValues?.role_id || permissionToRoleId['Doctor'], // Default to 'Doctor' role (ID 2)
+      department: defaultValues?.department || "",
+      role_id: defaultValues?.role_id ?? undefined, // Use undefined for optional select
       notes: defaultValues?.notes || "",
     },
   });
 
   const handleSubmit = (data: DoctorFormData) => {
-    // Ensure password is not sent if it's empty and we are editing
     const submissionData = { ...data };
-    if (defaultValues && !data.password) {
+    if (isEditing && !data.password) { // If editing and password field is empty, don't send it
       delete submissionData.password;
     }
+    // Ensure optional fields are correctly formatted as null if empty
+    submissionData.phone = data.phone || null;
+    submissionData.department = data.department || null;
+    submissionData.role_id = data.role_id ? Number(data.role_id) : null;
+    submissionData.notes = data.notes || null;
+    
     onSubmit(submissionData);
-    form.reset(); 
+    form.reset({ // Reset with structure that matches schema expectations for optional/nullable
+        username: "",
+        email: "",
+        password: "",
+        phone: "",
+        department: "",
+        role_id: undefined,
+        notes: ""
+    });
   };
+
+  React.useEffect(() => {
+    if (open) { // Reset form when dialog opens or defaultValues change
+        form.reset({
+            username: defaultValues?.username || "",
+            email: defaultValues?.email || "",
+            password: "",
+            phone: defaultValues?.phone || "",
+            department: defaultValues?.department || "",
+            role_id: defaultValues?.role_id ?? undefined,
+            notes: defaultValues?.notes || "",
+        });
+    }
+  }, [defaultValues, form, open]);
+
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -90,7 +121,7 @@ export function DoctorFormDialog({ open, onOpenChange, onSubmit, defaultValues }
               name="username"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Username</FormLabel>
+                  <FormLabel>Username <span className="text-destructive">*</span></FormLabel>
                   <FormControl>
                     <Input placeholder="drjohn" {...field} className="bg-background border-input" />
                   </FormControl>
@@ -103,7 +134,7 @@ export function DoctorFormDialog({ open, onOpenChange, onSubmit, defaultValues }
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Email</FormLabel>
+                  <FormLabel>Email <span className="text-destructive">*</span></FormLabel>
                   <FormControl>
                     <Input type="email" placeholder="john.doe@example.com" {...field} className="bg-background border-input"/>
                   </FormControl>
@@ -116,12 +147,12 @@ export function DoctorFormDialog({ open, onOpenChange, onSubmit, defaultValues }
               name="password"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Password</FormLabel>
+                  <FormLabel>Password {!isEditing && <span className="text-destructive">*</span>}</FormLabel>
                   <FormControl>
                     <Input type="password" placeholder={defaultValues ? "Leave blank to keep current" : "Enter password"} {...field} className="bg-background border-input"/>
                   </FormControl>
                   <FormDescription>
-                    {defaultValues ? "Leave blank to keep the current password." : "Create a password for the new doctor."}
+                    {defaultValues ? "Leave blank to keep the current password. New password must be at least 6 characters." : "Password must be at least 6 characters."}
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -135,7 +166,7 @@ export function DoctorFormDialog({ open, onOpenChange, onSubmit, defaultValues }
                 <FormItem>
                   <FormLabel>Phone</FormLabel>
                   <FormControl>
-                    <Input placeholder="555-123-4567" {...field} className="bg-background border-input"/>
+                    <Input placeholder="555-123-4567" {...field} value={field.value ?? ''} className="bg-background border-input"/>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -148,7 +179,7 @@ export function DoctorFormDialog({ open, onOpenChange, onSubmit, defaultValues }
                 <FormItem>
                   <FormLabel>Department</FormLabel>
                   <FormControl>
-                    <Input placeholder="Cardiology" {...field} className="bg-background border-input"/>
+                    <Input placeholder="Cardiology" {...field} value={field.value ?? ''} className="bg-background border-input"/>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -161,16 +192,20 @@ export function DoctorFormDialog({ open, onOpenChange, onSubmit, defaultValues }
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Role</FormLabel>
-                  <Select onValueChange={(value) => field.onChange(parseInt(value))} defaultValue={String(field.value)}>
+                  <Select 
+                    onValueChange={(value) => field.onChange(value === "" ? null : parseInt(value))} 
+                    value={field.value?.toString() ?? ""}
+                    defaultValue={field.value?.toString() ?? ""}
+                  >
                     <FormControl>
                       <SelectTrigger className="bg-background border-input">
                         <SelectValue placeholder="Select role" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
+                      <SelectItem value=""><em>None</em></SelectItem>
                       <SelectItem value={String(permissionToRoleId['Admin'])}>Admin</SelectItem>
                       <SelectItem value={String(permissionToRoleId['Doctor'])}>Doctor</SelectItem>
-                      {/* <SelectItem value="Read-Only">Read-Only</SelectItem> // Option removed for simplicity or map to a role_id if backend supports */}
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -191,7 +226,7 @@ export function DoctorFormDialog({ open, onOpenChange, onSubmit, defaultValues }
               )}
             />
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+              <Button type="button" variant="outline" onClick={() => { form.reset(); onOpenChange(false);}}>Cancel</Button>
               <Button type="submit">{defaultValues ? 'Save Changes' : 'Add Doctor'}</Button>
             </DialogFooter>
           </form>
