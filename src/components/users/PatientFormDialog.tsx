@@ -1,3 +1,4 @@
+
 // @ts-nocheck
 "use client";
 
@@ -5,7 +6,7 @@ import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import type { Patient, Doctor } from '@/types';
+import type { Patient, Doctor } from '@/types'; // Use updated Patient and Doctor types
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -16,17 +17,15 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const patientFormSchema = z.object({
-  name: z.string().min(2, { message: "Name must be at least 2 characters." }),
+  username: z.string().min(2, { message: "Name must be at least 2 characters." }),
   age: z.coerce.number().min(0, { message: "Age must be a positive number." }).max(120),
   gender: z.enum(['Male', 'Female', 'Other']),
-  medicalRecordNumber: z.string().min(3, { message: "MRN must be at least 3 characters." }),
-  attendingDoctorId: z.string().min(1, { message: "Please select an attending doctor." }),
-  // videoCount and analysisCount are typically managed by the system, not user input in this form
+  case_id: z.string().min(3, { message: "Case ID/MRN must be at least 3 characters." }),
+  doctor_id: z.string().min(1, { message: "Please select an attending doctor." }),
 });
 
 export type PatientFormData = z.infer<typeof patientFormSchema>;
@@ -35,19 +34,19 @@ interface PatientFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSubmit: (data: PatientFormData) => void;
-  defaultValues?: Patient | null;
-  doctors: Doctor[]; // To populate doctor selection
+  defaultValues?: Patient | null; // Patient type from src/types
+  doctors: Doctor[]; 
 }
 
 export function PatientFormDialog({ open, onOpenChange, onSubmit, defaultValues, doctors }: PatientFormDialogProps) {
   const form = useForm<PatientFormData>({
     resolver: zodResolver(patientFormSchema),
     defaultValues: {
-      name: defaultValues?.name || "",
+      username: defaultValues?.username || "",
       age: defaultValues?.age || 0,
       gender: defaultValues?.gender || "Other",
-      medicalRecordNumber: defaultValues?.medicalRecordNumber || "",
-      attendingDoctorId: defaultValues?.attendingDoctorId || "",
+      case_id: defaultValues?.case_id || "",
+      doctor_id: defaultValues?.doctor_id || "",
     },
   });
 
@@ -69,10 +68,10 @@ export function PatientFormDialog({ open, onOpenChange, onSubmit, defaultValues,
           <form onSubmit={form.handleSubmit(handleSubmit)} className="grid gap-4 py-4">
             <FormField
               control={form.control}
-              name="name"
+              name="username"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Name</FormLabel>
+                  <FormLabel>Patient Name</FormLabel>
                   <FormControl>
                     <Input placeholder="Jane Roe" {...field} className="bg-background border-input"/>
                   </FormControl>
@@ -119,10 +118,10 @@ export function PatientFormDialog({ open, onOpenChange, onSubmit, defaultValues,
             </div>
             <FormField
               control={form.control}
-              name="medicalRecordNumber"
+              name="case_id"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Medical Record Number</FormLabel>
+                  <FormLabel>Case ID / Medical Record Number</FormLabel>
                   <FormControl>
                     <Input placeholder="MRN12345" {...field} className="bg-background border-input"/>
                   </FormControl>
@@ -132,7 +131,7 @@ export function PatientFormDialog({ open, onOpenChange, onSubmit, defaultValues,
             />
             <FormField
               control={form.control}
-              name="attendingDoctorId"
+              name="doctor_id"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Attending Doctor</FormLabel>
@@ -144,8 +143,8 @@ export function PatientFormDialog({ open, onOpenChange, onSubmit, defaultValues,
                     </FormControl>
                     <SelectContent>
                       {doctors.map(doctor => (
-                        <SelectItem key={doctor.id} value={doctor.id}>
-                          {doctor.name} - {doctor.department}
+                        <SelectItem key={doctor.id} value={doctor.id.toString()}> {/* Ensure value is string if needed */}
+                          {doctor.username} - {doctor.department}
                         </SelectItem>
                       ))}
                        {doctors.length === 0 && <SelectItem value="" disabled>No doctors available</SelectItem>}

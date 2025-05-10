@@ -1,3 +1,4 @@
+
 'use client';
 
 import type { User } from '@/types';
@@ -35,19 +36,50 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (email: string, pass: string): Promise<boolean> => {
     setIsLoading(true);
-    // Mock authentication
+    // This is a mock authentication.
+    // In a real application, you would call your backend's login endpoint.
+    // For example: POST /api/v1/doctors/login or /api/v1/management/login
     if (email === 'admin@medadmin.com' && pass === 'password') {
       const user: User = {
-        id: 'admin1',
-        name: 'Admin User',
+        id: '1', // Assuming admin user has ID '1' as often is the case in DBs
+        name: 'Admin User', // Corresponds to username in backend
         email: 'admin@medadmin.com',
         avatarUrl: 'https://picsum.photos/seed/admin/40/40',
+        role_id: 1, // Admin role
       };
       setCurrentUser(user);
       localStorage.setItem('currentUser', JSON.stringify(user));
       setIsLoading(false);
+      router.push('/dashboard'); // Redirect after successful login
       return true;
     }
+    // Simulate API call for non-admin/failed login
+    // try {
+    //   const response = await fetch('/api/v1/doctors/login', { // or management/login
+    //     method: 'POST',
+    //     headers: { 'Content-Type': 'application/json' },
+    //     body: JSON.stringify({ username: email, password: pass }), // assuming email is username
+    //   });
+    //   if (response.ok) {
+    //     const data = await response.json();
+    //     if (data.doctor) {
+    //       const loggedInUser: User = {
+    //         id: data.doctor.id.toString(),
+    //         name: data.doctor.username,
+    //         email: data.doctor.email,
+        //         role_id: data.doctor.role_id,
+    //         // avatarUrl might not be available from this endpoint
+    //       };
+    //       setCurrentUser(loggedInUser);
+    //       localStorage.setItem('currentUser', JSON.stringify(loggedInUser));
+    //       setIsLoading(false);
+    //       router.push('/dashboard');
+    //       return true;
+    //     }
+    //   }
+    // } catch (error) {
+    //   console.error("Login API call failed:", error);
+    // }
     setIsLoading(false);
     return false;
   };

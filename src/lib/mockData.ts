@@ -1,154 +1,21 @@
+
 import type { Doctor, Patient, DataAnalysisDataPoint, DashboardMetrics } from '@/types';
 
-export const mockDoctors: Doctor[] = [
-  {
-    id: 'doc1',
-    name: 'Dr. Alice Smith',
-    password: 'password123',
-    email: 'alice.smith@medadmin.com',
-    phone: '555-0101',
-    department: 'Cardiology',
-    patientCount: 25,
-    permissions: 'Admin',
-    notes: 'Head of Cardiology department. Specialized in arrhythmia.',
-  },
-  {
-    id: 'doc2',
-    name: 'Dr. Bob Johnson',
-    password: 'bobsecurepassword',
-    email: 'bob.johnson@medadmin.com',
-    phone: '555-0102',
-    department: 'Pediatrics',
-    patientCount: 40,
-    permissions: 'Doctor',
-    notes: 'Focuses on early childhood development.',
-  },
-  {
-    id: 'doc3',
-    name: 'Dr. Carol White',
-    password: 'carol<3patients',
-    email: 'carol.white@medadmin.com',
-    phone: '555-0103',
-    department: 'Neurology',
-    patientCount: 15,
-    permissions: 'Doctor',
-    notes: 'Expert in neurodegenerative diseases.',
-  },
-  {
-    id: 'doc4',
-    name: 'Dr. David Brown',
-    password: 'davidpass',
-    email: 'david.brown@medadmin.com',
-    phone: '555-0104',
-    department: 'Oncology',
-    patientCount: 20,
-    permissions: 'Doctor',
-    notes: 'Researching new cancer treatments.',
-  },
-   {
-    id: 'doc5',
-    name: 'Dr. Eva Green',
-    password: 'evapassword',
-    email: 'eva.green@medadmin.com',
-    phone: '555-0105',
-    department: 'Cardiology',
-    patientCount: 18,
-    permissions: 'Doctor',
-    notes: 'Specializes in cardiac rehabilitation.',
-  },
-];
+// Mock data is no longer the source of truth for Doctors and Patients on the User Management page.
+// These can be kept for other parts of the app if needed, or removed entirely if User Management
+// was their only consumer. For now, I will empty them to signify they are not used by User Management.
 
-export const mockPatients: Patient[] = [
-  {
-    id: 'pat1',
-    name: 'John Doe',
-    age: 45,
-    gender: 'Male',
-    medicalRecordNumber: 'MRN001',
-    attendingDoctorId: 'doc1',
-    attendingDoctorName: 'Dr. Alice Smith',
-    videoCount: 3,
-    analysisCount: 2,
-  },
-  {
-    id: 'pat2',
-    name: 'Jane Roe',
-    age: 5,
-    gender: 'Female',
-    medicalRecordNumber: 'MRN002',
-    attendingDoctorId: 'doc2',
-    attendingDoctorName: 'Dr. Bob Johnson',
-    videoCount: 1,
-    analysisCount: 1,
-  },
-  {
-    id: 'pat3',
-    name: 'Michael Public',
-    age: 68,
-    gender: 'Male',
-    medicalRecordNumber: 'MRN003',
-    attendingDoctorId: 'doc3',
-    attendingDoctorName: 'Dr. Carol White',
-    videoCount: 5,
-    analysisCount: 4,
-  },
-  {
-    id: 'pat4',
-    name: 'Sarah Connor',
-    age: 32,
-    gender: 'Female',
-    medicalRecordNumber: 'MRN004',
-    attendingDoctorId: 'doc4',
-    attendingDoctorName: 'Dr. David Brown',
-    videoCount: 2,
-    analysisCount: 1,
-  },
-  {
-    id: 'pat5',
-    name: 'Peter Pan',
-    age: 10,
-    gender: 'Male',
-    medicalRecordNumber: 'MRN005',
-    attendingDoctorId: 'doc2',
-    attendingDoctorName: 'Dr. Bob Johnson',
-    videoCount: 0,
-    analysisCount: 0,
-  },
-   {
-    id: 'pat6',
-    name: 'Laura Croft',
-    age: 55,
-    gender: 'Female',
-    medicalRecordNumber: 'MRN006',
-    attendingDoctorId: 'doc1',
-    attendingDoctorName: 'Dr. Alice Smith',
-    videoCount: 4,
-    analysisCount: 3,
-  },
-  {
-    id: 'pat7',
-    name: 'James Kirk',
-    age: 72,
-    gender: 'Male',
-    medicalRecordNumber: 'MRN007',
-    attendingDoctorId: 'doc5',
-    attendingDoctorName: 'Dr. Eva Green',
-    videoCount: 1,
-    analysisCount: 1,
-  },
-];
+export const mockDoctors: Doctor[] = [];
 
-// Update patient counts for doctors based on mockPatients
-mockDoctors.forEach(doctor => {
-  doctor.patientCount = mockPatients.filter(patient => patient.attendingDoctorId === doctor.id).length;
-});
+export const mockPatients: Patient[] = [];
 
-
+// Dashboard metrics and chart data might still be used by the dashboard page.
+// If the dashboard also needs to be connected to real data, these would also be replaced.
 export const mockDashboardMetrics: DashboardMetrics = {
-  doctorCount: mockDoctors.length,
-  patientCount: mockPatients.length,
-  videoCount: mockPatients.reduce((sum, p) => sum + p.videoCount, 0),
-  dataAnalysisCount: mockPatients.reduce((sum, p) => sum + p.analysisCount, 0),
+  doctorCount: 0, // Will be updated dynamically if dashboard uses real data
+  patientCount: 0, // Will be updated dynamically
+  videoCount: 0,
+  dataAnalysisCount: 0,
 };
 
 export const mockDataAnalysisChartData: DataAnalysisDataPoint[] = [

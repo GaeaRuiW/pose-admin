@@ -1,25 +1,32 @@
+
 export interface Doctor {
-  id: string;
-  name: string;
-  password?: string; // Actual password for reveal functionality
+  id: string; // Matches backend 'id' (int, but string in frontend is common)
+  username: string; // Matches backend 'username', was 'name'
+  password?: string; // Frontend only, for setting/changing. Not stored as plaintext.
   email: string;
   phone: string;
   department: string;
-  patientCount: number;
-  permissions: 'Admin' | 'Doctor' | 'Read-Only';
-  notes: string;
+  role_id: number; // Matches backend 'role_id' (e.g., 1 for Admin, 2 for Doctor)
+  notes?: string; // Matches new backend 'notes' field
+  create_time?: string;
+  update_time?: string;
+  // Frontend specific, will be derived or calculated from API calls if needed by table
+  patientCount?: number; 
 }
 
 export interface Patient {
-  id: string;
-  name: string;
+  id: string; // Matches backend 'id'
+  username: string; // Matches backend 'username', was 'name'
   age: number;
-  gender: 'Male' | 'Female' | 'Other';
-  medicalRecordNumber: string;
-  attendingDoctorId: string;
-  attendingDoctorName: string; // Denormalized for display
-  videoCount: number;
-  analysisCount: number;
+  gender: 'Male' | 'Female' | 'Other'; // Backend stores as string
+  case_id: string; // Matches backend 'case_id', was 'medicalRecordNumber'
+  doctor_id: string; // Matches backend 'doctor_id', was 'attendingDoctorId'
+  create_time?: string;
+  update_time?: string;
+  // Frontend specific, will be derived from API calls
+  attendingDoctorName?: string; 
+  videoCount?: number;
+  analysisCount?: number;
 }
 
 export interface DataAnalysisDataPoint {
@@ -34,9 +41,10 @@ export interface DashboardMetrics {
   dataAnalysisCount: number;
 }
 
-export interface User {
-  id: string;
-  name: string;
+export interface User { // For AuthContext currentUser
+  id: string; // Corresponds to doctor's ID from backend
+  name: string; // Corresponds to doctor's username from backend
   email: string;
   avatarUrl?: string;
+  role_id?: number; // Add role_id for permission checks
 }
