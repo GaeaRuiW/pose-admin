@@ -6,7 +6,7 @@ import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import type { Patient, Doctor } from '@/types'; // Use updated Patient and Doctor types
+import type { Patient, Doctor } from '@/types'; 
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -19,6 +19,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea"; // Import Textarea
 
 const patientFormSchema = z.object({
   username: z.string().min(2, { message: "Name must be at least 2 characters." }),
@@ -26,6 +27,7 @@ const patientFormSchema = z.object({
   gender: z.enum(['Male', 'Female', 'Other']),
   case_id: z.string().min(3, { message: "Case ID/MRN must be at least 3 characters." }),
   doctor_id: z.string().min(1, { message: "Please select an attending doctor." }),
+  notes: z.string().optional().nullable(), // Added notes field to schema
 });
 
 export type PatientFormData = z.infer<typeof patientFormSchema>;
@@ -34,7 +36,7 @@ interface PatientFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSubmit: (data: PatientFormData) => void;
-  defaultValues?: Patient | null; // Patient type from src/types
+  defaultValues?: Patient | null; 
   doctors: Doctor[]; 
 }
 
@@ -47,6 +49,7 @@ export function PatientFormDialog({ open, onOpenChange, onSubmit, defaultValues,
       gender: defaultValues?.gender || "Other",
       case_id: defaultValues?.case_id || "",
       doctor_id: defaultValues?.doctor_id || "",
+      notes: defaultValues?.notes || "", // Added default value for notes
     },
   });
 
@@ -143,13 +146,26 @@ export function PatientFormDialog({ open, onOpenChange, onSubmit, defaultValues,
                     </FormControl>
                     <SelectContent>
                       {doctors.map(doctor => (
-                        <SelectItem key={doctor.id} value={doctor.id.toString()}> {/* Ensure value is string if needed */}
+                        <SelectItem key={doctor.id} value={doctor.id.toString()}>
                           {doctor.username} - {doctor.department}
                         </SelectItem>
                       ))}
                        {doctors.length === 0 && <SelectItem value="" disabled>No doctors available</SelectItem>}
                     </SelectContent>
                   </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="notes"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Notes</FormLabel>
+                  <FormControl>
+                    <Textarea placeholder="Optional notes about the patient..." {...field} value={field.value ?? ''} className="bg-background border-input"/>
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
