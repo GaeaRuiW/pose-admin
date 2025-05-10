@@ -208,9 +208,9 @@ const messagesData = {
       patient: "Patient",
       originalVideo": "Original Video",
       status: "Status",
-      progress": "Progress",
+      progress: "Progress",
       createdDate": "Created Date",
-      actions": "Actions",
+      actions: "Actions",
       noAnalysesFound": "No analyses found.",
       viewDetails": "View Details",
       viewProcessedVideo": "View Processed Video",
@@ -367,7 +367,7 @@ const messagesData = {
       notesLabel: "备注",
       notesPlaceholder: "关于患者的可选备注...",
       addButton: "添加患者",
-      saveButton: "保存更改",
+      saveButton": "保存更改",
       noDoctorsAvailable": "暂无医生可选"
     },
     DoctorsTable: {
@@ -429,11 +429,11 @@ const messagesData = {
       openMenu": "打开菜单",
       notApplicable": "不适用"
     },
-    VideoPlayerModal: {
+    VideoPlayerModal": {
       title: "视频播放器",
       close": "关闭"
     },
-    AnalysesPage: {
+    AnalysesPage": {
       title: "分析管理",
       searchPlaceholder": "搜索分析...",
       showingAnalysesForPatient": "显示患者 {patientName} 的分析。",
@@ -454,8 +454,8 @@ const messagesData = {
       patient: "患者",
       originalVideo": "原始视频",
       status: "状态",
-      progress": "进度",
-      createdDate": "创建日期",
+      progress: "进度",
+      createdDate: "创建日期",
       actions: "操作",
       noAnalysesFound": "未找到分析。",
       viewDetails": "查看详情",
