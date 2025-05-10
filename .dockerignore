@@ -1,0 +1,37 @@
+# Git files
+.git
+.gitignore
+
+# Node modules
+node_modules
+
+# Next.js build output (copied from builder stage)
+.next
+
+# npm debug log
+npm-debug.log
+*-debug.log
+*-error.log
+
+# README
+README.md
+
+# VSCode specific
+.vscode
+
+# Backend directory (if this Dockerfile is only for the frontend)
+backend/
+
+# Development files
+src/ai/dev.ts
+
+# Environment files (should be passed at runtime)
+.env
+.env*.local
+
+# Test files
+test-data.json
+
+# OS generated files
+.DS_Store
+Thumbs.db
