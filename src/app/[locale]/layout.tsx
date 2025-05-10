@@ -1,10 +1,11 @@
+
 import type { Metadata } from 'next';
 import { Inter as Geist, Inter as Geist_Mono } from 'next/font/google';
 import '../globals.css'; // Adjusted path
 import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider } from '@/context/AuthContext';
 import {NextIntlClientProvider} from 'next-intl';
-import {getLocale, getMessages} from 'next-intl/server';
+import {getMessages} from 'next-intl/server'; // getLocale is not used, getMessages is primary
 import {notFound} from 'next/navigation';
 import type { ReactNode } from 'react';
 import { locales, defaultLocale } from '@/i18n'; // Assuming i18n.ts is in src
@@ -46,17 +47,19 @@ export default async function LocaleLayout({
 
   let messages;
   try {
-    messages = await getMessages({locale});
+    // Use the locale from the request context, should be equivalent to params.locale here.
+    // This simplifies the call and might avoid issues if explicit locale passing has problems.
+    messages = await getMessages(); 
   } catch (error) {
     // This catch block should ideally not be hit if i18n.ts has fallbacks or handles errors by calling notFound() itself.
     // However, if getMessages() itself throws before i18n.ts can execute fully.
-    console.error(`[layout.tsx] Error calling getMessages({locale: "${locale}"}):`, error);
+    console.error(`[layout.tsx] Error calling getMessages() for locale "${locale}":`, error);
     notFound();
   }
 
   // It's possible getMessages succeeds but returns undefined/null if i18n.ts misbehaves without throwing.
   if (!messages) {
-    console.error(`[layout.tsx] getMessages({locale: "${locale}"}) returned no messages. This indicates an issue in i18n.ts. Calling notFound().`);
+    console.error(`[layout.tsx] getMessages() for locale "${locale}" returned no messages. This indicates an issue in i18n.ts. Calling notFound().`);
     notFound();
   }
 
