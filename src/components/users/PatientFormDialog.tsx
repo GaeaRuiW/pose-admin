@@ -26,7 +26,7 @@ const patientFormSchema = z.object({
   age: z.coerce.number().min(0, "Age cannot be negative.").optional().nullable(),
   gender: z.enum(['Male', 'Female', 'Other']).optional().nullable(),
   case_id: z.string().min(1, "Case ID is required.").min(3, { message: "Case ID/MRN must be at least 3 characters." }),
-  doctor_id: z.string().optional().nullable().or(z.literal('')), // Can be empty string, null, or undefined
+  doctor_id: z.string().optional().nullable(), // Can be actual ID string, or null
   notes: z.string().optional().nullable(),
 });
 
@@ -40,15 +40,17 @@ interface PatientFormDialogProps {
   doctors: Doctor[]; 
 }
 
+const NO_DOCTOR_VALUE = "__NONE__"; // Unique value for "None" option
+
 export function PatientFormDialog({ open, onOpenChange, onSubmit, defaultValues, doctors }: PatientFormDialogProps) {
   const form = useForm<PatientFormData>({
     resolver: zodResolver(patientFormSchema),
     defaultValues: {
       username: defaultValues?.username || "",
-      age: defaultValues?.age ?? undefined, // Use undefined for optional number to clear field
-      gender: defaultValues?.gender || undefined, // Use undefined for optional enum
+      age: defaultValues?.age ?? undefined,
+      gender: defaultValues?.gender || undefined,
       case_id: defaultValues?.case_id || "",
-      doctor_id: defaultValues?.doctor_id || "", // Empty string for select placeholder
+      doctor_id: defaultValues?.doctor_id ?? null, // Use null for no doctor, or actual ID
       notes: defaultValues?.notes || "",
     },
   });
@@ -58,38 +60,29 @@ export function PatientFormDialog({ open, onOpenChange, onSubmit, defaultValues,
       ...data,
       age: data.age === undefined || data.age === null || isNaN(data.age) ? null : Number(data.age),
       gender: data.gender === undefined || data.gender === null ? null : data.gender,
-      doctor_id: data.doctor_id === "" || data.doctor_id === undefined || data.doctor_id === null ? null : data.doctor_id,
+      doctor_id: data.doctor_id, // Will be null if "None" was selected, or actual ID
       notes: data.notes === "" || data.notes === undefined || data.notes === null ? null : data.notes,
     };
-    onSubmit(submissionData as PatientFormData); // Cast because doctor_id might be null now
+    onSubmit(submissionData as PatientFormData);
     form.reset({ 
         username: "", 
         age: undefined, 
         gender: undefined, 
         case_id: "", 
-        doctor_id: "",
+        doctor_id: null, // Reset to null for unassigned
         notes: "" 
     });
   };
   
   React.useEffect(() => {
-    if (defaultValues) {
+    if (open) { // Reset form when dialog opens or defaultValues change
       form.reset({
-        username: defaultValues.username || "",
-        age: defaultValues.age ?? undefined,
-        gender: defaultValues.gender || undefined,
-        case_id: defaultValues.case_id || "",
-        doctor_id: defaultValues.doctor_id || "",
-        notes: defaultValues.notes || "",
-      });
-    } else {
-      form.reset({
-        username: "",
-        age: undefined,
-        gender: undefined,
-        case_id: "",
-        doctor_id: "",
-        notes: "",
+        username: defaultValues?.username || "",
+        age: defaultValues?.age ?? undefined,
+        gender: defaultValues?.gender || undefined,
+        case_id: defaultValues?.case_id || "",
+        doctor_id: defaultValues?.doctor_id ?? null, // Use null if no doctor_id
+        notes: defaultValues?.notes || "",
       });
     }
   }, [defaultValues, form, open]);
@@ -175,20 +168,23 @@ export function PatientFormDialog({ open, onOpenChange, onSubmit, defaultValues,
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Attending Doctor</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value ?? ""} defaultValue={field.value ?? ""}>
+                  <Select 
+                    onValueChange={(value) => field.onChange(value === NO_DOCTOR_VALUE ? null : value)} 
+                    value={field.value === null ? NO_DOCTOR_VALUE : (field.value || "")} // Map null to NO_DOCTOR_VALUE for select state, "" for placeholder
+                  >
                     <FormControl>
                       <SelectTrigger className="bg-background border-input">
                         <SelectValue placeholder="Select doctor" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value=""><em>None</em></SelectItem>
+                      <SelectItem value={NO_DOCTOR_VALUE}><em>None</em></SelectItem>
                       {doctors.map(doctor => (
                         <SelectItem key={doctor.id} value={doctor.id.toString()}>
                           {doctor.username} - {doctor.department}
                         </SelectItem>
                       ))}
-                       {doctors.length === 0 && <SelectItem value="" disabled>No doctors available</SelectItem>}
+                       {doctors.length === 0 && !defaultValues?.doctor_id && <SelectItem value="no_doctors_available_placeholder" disabled>No doctors available</SelectItem>}
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -218,3 +214,4 @@ export function PatientFormDialog({ open, onOpenChange, onSubmit, defaultValues,
     </Dialog>
   );
 }
+
