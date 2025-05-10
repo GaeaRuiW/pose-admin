@@ -180,7 +180,7 @@ const messagesData = {
       videoTypeOriginal": "Original",
       videoTypeAnalysis": "Analysis",
       videoTypeUnknown": "Unknown",
-      openMenu": "Open menu",
+      openMenu: "Open menu",
       notApplicable": "N/A"
     },
     VideoPlayerModal": {
@@ -215,7 +215,7 @@ const messagesData = {
       viewDetails": "View Details",
       viewProcessedVideo": "View Processed Video",
       delete: "Delete",
-      openMenu": "Open menu",
+      openMenu: "Open menu",
       notApplicable": "N/A"
     },
     ToastMessages: {
@@ -295,7 +295,7 @@ const messagesData = {
       errorLoading: "加载仪表盘时出错",
       retry: "重试",
       loading: "正在加载仪表盘...",
-      noTrendData": "无分析趋势数据。"
+      noTrendData: "无分析趋势数据。"
     },
     UserManagementPage: {
       title: "用户管理",
@@ -313,7 +313,7 @@ const messagesData = {
       confirmDeleteDoctorDescription": "此操作无法撤销。这将永久删除{doctorName}医生。{reassignMessage}",
       reassignPatientsMessage": "患者将被重新分配给{assignDoctorName}医生。",
       noOtherDoctorToReassign": "该医生名下有患者，并且没有其他医生可以重新分配他们。",
-      cannotDeleteDoctor": "无法删除医生",
+      cannotDeleteDoctor: "无法删除医生",
       confirmDeletePatientTitle": "您确定吗？",
       confirmDeletePatientDescription": "此操作无法撤销。这将永久删除患者{patientName}。"
     },
@@ -426,7 +426,7 @@ const messagesData = {
       videoTypeOriginal": "原始视频",
       videoTypeAnalysis": "分析视频",
       videoTypeUnknown": "未知",
-      openMenu": "打开菜单",
+      openMenu: "打开菜单",
       notApplicable": "不适用"
     },
     VideoPlayerModal": {
@@ -461,7 +461,7 @@ const messagesData = {
       viewDetails": "查看详情",
       viewProcessedVideo": "查看处理后视频",
       delete: "删除",
-      openMenu": "打开菜单",
+      openMenu: "打开菜单",
       notApplicable": "不适用"
     },
     ToastMessages: {
@@ -523,5 +523,3 @@ export default getRequestConfig(async ({locale}) => {
   };
 });
 
-
-    
