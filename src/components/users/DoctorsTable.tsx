@@ -1,34 +1,50 @@
 
 // @ts-nocheck
 "use client";
-import type { Doctor } from "@/types"; // Use updated Doctor type
-import React, { useState, useEffect, useMemo } from "react";
+import type { Doctor } from "@/types"; 
+import React, { useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Eye, EyeOff, Users, FilePenLine, Trash2, MoreHorizontal } from "lucide-react";
+import { Users, FilePenLine, Trash2, MoreHorizontal, ArrowUp, ArrowDown, ChevronsUpDown } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+
+interface SortConfig {
+  key: string;
+  direction: 'ascending' | 'descending';
+}
 
 interface DoctorsTableProps {
   doctors: Doctor[];
   scrollToDoctorId?: string | null;
   onEdit: (doctor: Doctor) => void;
   onDelete: (doctorId: string) => void;
+  sortConfig: SortConfig | null;
+  onSort: (key: string) => void;
 }
 
-// Mapping backend role_id to frontend display string
-const roleIdToPermissionString = (roleId?: number): string => {
+const roleIdToPermissionString = (roleId?: number | null): string => {
   if (roleId === 1) return 'Admin';
   if (roleId === 2) return 'Doctor';
-  // Add more roles if needed
-  return 'Unknown'; // Fallback for unknown roles
+  return 'Unknown'; 
 };
 
-export function DoctorsTable({ doctors, scrollToDoctorId, onEdit, onDelete }: DoctorsTableProps) {
+const SortableHeader = ({ children, sortKey, currentSort, onSort }: { children: React.ReactNode, sortKey: string, currentSort: SortConfig | null, onSort: (key: string) => void }) => {
+  const isSorted = currentSort?.key === sortKey;
+  const Icon = isSorted ? (currentSort.direction === 'ascending' ? ArrowUp : ArrowDown) : ChevronsUpDown;
+  return (
+    <Button variant="ghost" onClick={() => onSort(sortKey)} className="px-1 py-0.5 h-auto font-medium text-muted-foreground hover:text-foreground group">
+      {children}
+      <Icon className={`ml-2 h-4 w-4 ${isSorted ? 'text-foreground' : 'opacity-50 group-hover:opacity-100'}`} />
+    </Button>
+  );
+};
+
+
+export function DoctorsTable({ doctors, scrollToDoctorId, onEdit, onDelete, sortConfig, onSort }: DoctorsTableProps) {
   const router = useRouter();
-  // Password reveal state is not needed as backend won't send passwords
   
   const doctorRowRefs = useMemo(() => 
     doctors.reduce<Record<string, React.RefObject<HTMLTableRowElement>>>((acc, doctor) => {
@@ -44,7 +60,7 @@ export function DoctorsTable({ doctors, scrollToDoctorId, onEdit, onDelete }: Do
           behavior: "smooth",
           block: "center",
         });
-      }, 100); // Small delay to ensure layout is complete
+      }, 100); 
     }
   }, [scrollToDoctorId, doctorRowRefs]);
 
@@ -53,27 +69,40 @@ export function DoctorsTable({ doctors, scrollToDoctorId, onEdit, onDelete }: Do
     router.push(`/users?tab=patients&doctorId=${doctorId}`);
   };
 
+  const headers = [
+    { key: 'username', label: 'Username', className: 'w-[180px]' },
+    { key: 'email', label: 'Email', className: 'w-[220px]' },
+    { key: 'phone', label: 'Phone', className: 'w-[150px]' },
+    { key: 'department', label: 'Department', className: 'w-[150px]' },
+    { key: 'patientCount', label: 'Patient Count', className: 'w-[150px] text-center' },
+    { key: 'role_id', label: 'Role', className: 'w-[120px]' },
+    { key: 'notes', label: 'Notes', className: 'min-w-[150px]', sortable: false },
+    { key: 'actions', label: 'Actions', className: 'w-[80px] text-right', sortable: false },
+  ];
+
   return (
     <TooltipProvider>
       <div className="rounded-lg border shadow-md overflow-x-auto bg-card">
         <Table>
           <TableHeader>
             <TableRow className="bg-muted/50 hover:bg-muted/60">
-              <TableHead className="w-[180px]">Username</TableHead>
-              {/* Password column removed as it's not sent from backend */}
-              <TableHead className="w-[220px]">Email</TableHead>
-              <TableHead className="w-[150px]">Phone</TableHead>
-              <TableHead className="w-[150px]">Department</TableHead>
-              <TableHead className="w-[150px] text-center">Patient Count</TableHead>
-              <TableHead className="w-[120px]">Role</TableHead>
-              <TableHead className="min-w-[150px]">Notes</TableHead>
-              <TableHead className="w-[80px] text-right">Actions</TableHead>
+              {headers.map(header => (
+                <TableHead key={header.key} className={header.className}>
+                  {header.sortable !== false ? (
+                    <SortableHeader sortKey={header.key} currentSort={sortConfig} onSort={onSort}>
+                      {header.label}
+                    </SortableHeader>
+                  ) : (
+                    header.label
+                  )}
+                </TableHead>
+              ))}
             </TableRow>
           </TableHeader>
           <TableBody>
             {doctors.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="h-24 text-center text-muted-foreground">
+                <TableCell colSpan={headers.length} className="h-24 text-center text-muted-foreground">
                   No doctors found.
                 </TableCell>
               </TableRow>
@@ -87,8 +116,8 @@ export function DoctorsTable({ doctors, scrollToDoctorId, onEdit, onDelete }: Do
                 >
                   <TableCell className="font-medium text-foreground">{doctor.username}</TableCell>
                   <TableCell className="text-muted-foreground">{doctor.email}</TableCell>
-                  <TableCell className="text-muted-foreground">{doctor.phone}</TableCell>
-                  <TableCell className="text-muted-foreground">{doctor.department}</TableCell>
+                  <TableCell className="text-muted-foreground">{doctor.phone || '-'}</TableCell>
+                  <TableCell className="text-muted-foreground">{doctor.department || '-'}</TableCell>
                   <TableCell className="text-center">
                     <Button 
                       variant="link" 
@@ -137,3 +166,4 @@ export function DoctorsTable({ doctors, scrollToDoctorId, onEdit, onDelete }: Do
     </TooltipProvider>
   );
 }
+

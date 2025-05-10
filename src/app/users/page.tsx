@@ -19,20 +19,31 @@ import AppLayout from "@/components/layout/AppLayout";
 import { useAuth } from '@/context/AuthContext'; // For admin_doctor_id
 import { Skeleton } from '@/components/ui/skeleton';
 
-
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+
+type SortDirection = 'ascending' | 'descending';
+interface SortConfig {
+  key: string;
+  direction: SortDirection;
+}
 
 // Mapping frontend permission strings to backend role_id
 const permissionToRoleId = {
   'Admin': 1,
   'Doctor': 2,
 };
+const roleIdToPermissionString = (roleId?: number | null): string => {
+  if (roleId === 1) return 'Admin';
+  if (roleId === 2) return 'Doctor';
+  return 'Unknown';
+};
+
 
 function UserManagementContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
-  const { currentUser } = useAuth(); // Get current logged-in user (admin)
+  const { currentUser } = useAuth(); 
   
   const activeTab = searchParams.get('tab') || 'doctors';
   const filterDoctorIdParam = searchParams.get('doctorId');
@@ -42,7 +53,6 @@ function UserManagementContent() {
   const [patients, setPatients] = useState<Patient[]>([]);
   const [isLoading, setIsLoading] = useState({ doctors: true, patients: true });
   const [error, setError] = useState<string | null>(null);
-
 
   const [searchTermDoctors, setSearchTermDoctors] = useState('');
   const [searchTermPatients, setSearchTermPatients] = useState('');
@@ -55,7 +65,9 @@ function UserManagementContent() {
   const [deletingDoctorId, setDeletingDoctorId] = useState<string | null>(null);
   const [deletingPatientId, setDeletingPatientId] = useState<string | null>(null);
   const [assignDoctorIdForDeletion, setAssignDoctorIdForDeletion] = useState<string | null>(null);
-  const [showAssignDoctorDialog, setShowAssignDoctorDialog] = useState(false);
+
+  const [sortConfigDoctors, setSortConfigDoctors] = useState<SortConfig | null>(null);
+  const [sortConfigPatients, setSortConfigPatients] = useState<SortConfig | null>(null);
 
 
   const fetchDoctors = useCallback(async () => {
@@ -65,7 +77,7 @@ function UserManagementContent() {
       const response = await fetch(`${API_BASE_URL}/management/doctors?admin_doctor_id=${currentUser.id}`);
       if (!response.ok) throw new Error(`Failed to fetch doctors: ${response.statusText}`);
       const data: Doctor[] = await response.json();
-      setDoctors(data.map(d => ({...d, id: String(d.id)}))); // Ensure ID is string
+      setDoctors(data.map(d => ({...d, id: String(d.id)}))); 
     } catch (e) {
       setError((e as Error).message);
       toast({ title: "Error", description: "Could not fetch doctors.", variant: "destructive" });
@@ -81,7 +93,7 @@ function UserManagementContent() {
       const response = await fetch(`${API_BASE_URL}/management/patients?admin_doctor_id=${currentUser.id}`);
       if (!response.ok) throw new Error(`Failed to fetch patients: ${response.statusText}`);
       const data: Patient[] = await response.json();
-      setPatients(data.map(p => ({...p, id: String(p.id), doctor_id: String(p.doctor_id)}))); // Ensure IDs are strings
+      setPatients(data.map(p => ({...p, id: String(p.id), doctor_id: p.doctor_id ? String(p.doctor_id) : null}))); 
     } catch (e) {
       setError((e as Error).message);
       toast({ title: "Error", description: "Could not fetch patients.", variant: "destructive" });
@@ -95,26 +107,93 @@ function UserManagementContent() {
     fetchPatients();
   }, [fetchDoctors, fetchPatients]);
 
+  const handleSortDoctors = (key: string) => {
+    let direction: SortDirection = 'ascending';
+    if (sortConfigDoctors && sortConfigDoctors.key === key && sortConfigDoctors.direction === 'ascending') {
+      direction = 'descending';
+    }
+    setSortConfigDoctors({ key, direction });
+  };
+
+  const handleSortPatients = (key: string) => {
+    let direction: SortDirection = 'ascending';
+    if (sortConfigPatients && sortConfigPatients.key === key && sortConfigPatients.direction === 'ascending') {
+      direction = 'descending';
+    }
+    setSortConfigPatients({ key, direction });
+  };
+  
+  const sortData = <T,>(data: T[], config: SortConfig | null, keyAccessor: (item: T, key: string) => any): T[] => {
+    if (!config) return data;
+    const { key, direction } = config;
+    return [...data].sort((a, b) => {
+      const aValue = keyAccessor(a, key);
+      const bValue = keyAccessor(b, key);
+  
+      if (aValue === null || aValue === undefined) return 1;
+      if (bValue === null || bValue === undefined) return -1;
+  
+      let comparison = 0;
+      if (typeof aValue === 'number' && typeof bValue === 'number') {
+        comparison = aValue - bValue;
+      } else if (typeof aValue === 'string' && typeof bValue === 'string') {
+        comparison = aValue.toLowerCase().localeCompare(bValue.toLowerCase());
+      } else {
+        // Fallback for mixed types or other types
+        comparison = String(aValue).toLowerCase().localeCompare(String(bValue).toLowerCase());
+      }
+      return direction === 'ascending' ? comparison : -comparison;
+    });
+  };
+
 
   const displayedDoctors = useMemo(() => {
-    return doctors.filter(doctor =>
-      doctor.username.toLowerCase().includes(searchTermDoctors.toLowerCase()) ||
-      doctor.email.toLowerCase().includes(searchTermDoctors.toLowerCase()) ||
-      doctor.department.toLowerCase().includes(searchTermDoctors.toLowerCase())
+    let filteredDoctors = doctors.filter(doctor =>
+      (doctor.username?.toLowerCase() || '').includes(searchTermDoctors.toLowerCase()) ||
+      (doctor.email?.toLowerCase() || '').includes(searchTermDoctors.toLowerCase()) ||
+      (doctor.department?.toLowerCase() || '').includes(searchTermDoctors.toLowerCase())
     );
-  }, [doctors, searchTermDoctors]);
+
+    const doctorKeyAccessor = (doctor: Doctor, key: string) => {
+        switch(key) {
+            case 'username': return doctor.username;
+            case 'email': return doctor.email;
+            case 'phone': return doctor.phone;
+            case 'department': return doctor.department;
+            case 'patientCount': return doctor.patientCount;
+            case 'role_id': return roleIdToPermissionString(doctor.role_id);
+            default: return (doctor as any)[key];
+        }
+    }
+    return sortData(filteredDoctors, sortConfigDoctors, doctorKeyAccessor);
+  }, [doctors, searchTermDoctors, sortConfigDoctors]);
+
 
   const displayedPatients = useMemo(() => {
     let filtered = patients;
     if (activeTab === 'patients' && filterDoctorIdParam) {
       filtered = filtered.filter(patient => patient.doctor_id === filterDoctorIdParam);
     }
-    return filtered.filter(patient =>
-      patient.username.toLowerCase().includes(searchTermPatients.toLowerCase()) ||
-      patient.case_id.toLowerCase().includes(searchTermPatients.toLowerCase()) ||
+    filtered = filtered.filter(patient =>
+      (patient.username?.toLowerCase() || '').includes(searchTermPatients.toLowerCase()) ||
+      (patient.case_id?.toLowerCase() || '').includes(searchTermPatients.toLowerCase()) ||
       (patient.attendingDoctorName && patient.attendingDoctorName.toLowerCase().includes(searchTermPatients.toLowerCase()))
     );
-  }, [patients, filterDoctorIdParam, searchTermPatients, activeTab]);
+    const patientKeyAccessor = (patient: Patient, key: string) => {
+        switch(key) {
+            case 'username': return patient.username;
+            case 'age': return patient.age;
+            case 'gender': return patient.gender;
+            case 'case_id': return patient.case_id;
+            case 'attendingDoctorName': return patient.attendingDoctorName;
+            case 'videoCount': return patient.videoCount;
+            case 'analysisCount': return patient.analysisCount;
+            default: return (patient as any)[key];
+        }
+    }
+    return sortData(filtered, sortConfigPatients, patientKeyAccessor);
+  }, [patients, filterDoctorIdParam, searchTermPatients, activeTab, sortConfigPatients]);
+
 
   const handleTabChange = (newTabValue: string) => {
     const newParams = new URLSearchParams(searchParams.toString());
@@ -180,9 +259,8 @@ function UserManagementContent() {
         const errorData = await response.json();
         throw new Error(errorData.detail || `Failed to save doctor: ${response.statusText}`);
       }
-      // const savedDoctor: Doctor = await response.json(); // Backend returns the saved/updated doctor
       toast({ title: editingDoctor ? "Doctor Updated" : "Doctor Added", description: `${data.username} has been saved successfully.` });
-      fetchDoctors(); // Refresh list
+      fetchDoctors(); 
     } catch (e) {
       toast({ title: "Error", description: (e as Error).message, variant: "destructive" });
     }
@@ -199,13 +277,9 @@ function UserManagementContent() {
             toast({ title: "Cannot Delete Doctor", description: "This doctor has patients and there are no other doctors to reassign them to.", variant: "destructive"});
             return;
         }
-        // For simplicity, auto-select the first other doctor. A real UI might prompt.
-        // Or, show a dialog to select assign_doctor_id if multiple available
         setAssignDoctorIdForDeletion(otherDoctors[0].id); 
-        setDeletingDoctorId(doctorId); // This will open the confirmation dialog
+        setDeletingDoctorId(doctorId); 
     } else {
-        // No patients, can use own ID or any valid ID as assign_doctor_id if backend requires it strictly.
-        // For safety, use current admin ID if different, or first available doctor.
         let assignId = currentUser?.id && currentUser.id !== doctorId ? currentUser.id : (doctors.find(d => d.id !== doctorId)?.id || doctorId);
         setAssignDoctorIdForDeletion(assignId);
         setDeletingDoctorId(doctorId);
@@ -233,8 +307,8 @@ function UserManagementContent() {
         throw new Error(errorData.detail || `Failed to delete doctor: ${response.statusText}`);
       }
       toast({ title: "Doctor Deleted", description: `Doctor has been deleted.`, variant: "destructive"});
-      fetchDoctors(); // Refresh list
-      fetchPatients(); // Patient counts / assignments might change
+      fetchDoctors(); 
+      fetchPatients(); 
     } catch (e) {
       toast({ title: "Error", description: (e as Error).message, variant: "destructive" });
     }
@@ -255,7 +329,11 @@ function UserManagementContent() {
 
   const handleSavePatient = async (data: PatientFormData) => {
     if (!currentUser?.id) return;
-    const payload = { ...data, admin_doctor_id: parseInt(currentUser.id), doctor_id: parseInt(data.doctor_id) };
+    const payload = { 
+      ...data, 
+      admin_doctor_id: parseInt(currentUser.id), 
+      doctor_id: data.doctor_id ? parseInt(data.doctor_id) : null 
+    };
     
     try {
       let response;
@@ -277,8 +355,8 @@ function UserManagementContent() {
         throw new Error(errorData.detail || `Failed to save patient: ${response.statusText}`);
       }
       toast({ title: editingPatient ? "Patient Updated" : "Patient Added", description: `${data.username} has been saved successfully.` });
-      fetchPatients(); // Refresh patient list
-      fetchDoctors(); // Refresh doctor patient counts
+      fetchPatients(); 
+      fetchDoctors(); 
     } catch (e) {
       toast({ title: "Error", description: (e as Error).message, variant: "destructive" });
     }
@@ -292,7 +370,7 @@ function UserManagementContent() {
     const payload = {
         admin_doctor_id: parseInt(currentUser.id),
         patient_id: parseInt(deletingPatientId),
-        force: false // Soft delete by default
+        force: false 
     };
     try {
       const response = await fetch(`${API_BASE_URL}/management/patient`, {
@@ -305,8 +383,8 @@ function UserManagementContent() {
         throw new Error(errorData.detail || `Failed to delete patient: ${response.statusText}`);
       }
       toast({ title: "Patient Deleted", description: `Patient has been deleted.`, variant: "destructive" });
-      fetchPatients(); // Refresh patient list
-      fetchDoctors(); // Refresh doctor patient counts
+      fetchPatients(); 
+      fetchDoctors(); 
     } catch (e) {
       toast({ title: "Error", description: (e as Error).message, variant: "destructive" });
     }
@@ -317,10 +395,10 @@ function UserManagementContent() {
     return (
       <div className="flex flex-col gap-6">
         <h1 className="text-3xl font-bold tracking-tight text-foreground">User Management</h1>
-        <Skeleton className="h-10 w-1/4" /> {/* TabsList placeholder */}
+        <Skeleton className="h-10 w-1/4" /> 
         <div className="space-y-4">
-          <Skeleton className="h-12 w-full" /> {/* Search/Button row placeholder */}
-          <Skeleton className="h-64 w-full" /> {/* Table placeholder */}
+          <Skeleton className="h-12 w-full" /> 
+          <Skeleton className="h-64 w-full" /> 
         </div>
       </div>
     )
@@ -407,6 +485,8 @@ function UserManagementContent() {
             scrollToDoctorId={scrollToDoctorIdParam}
             onEdit={handleEditDoctor}
             onDelete={handleDeleteDoctor}
+            sortConfig={sortConfigDoctors}
+            onSort={handleSortDoctors}
           />
         </TabsContent>
         <TabsContent value="patients">
@@ -414,6 +494,8 @@ function UserManagementContent() {
             patients={displayedPatients} 
             onEdit={handleEditPatient}
             onDelete={handleDeletePatient}
+            sortConfig={sortConfigPatients}
+            onSort={handleSortPatients}
           />
         </TabsContent>
       </Tabs>
@@ -443,7 +525,7 @@ function UserManagementContent() {
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
               This action cannot be undone. This will permanently delete Dr. {doctors.find(d => d.id === deletingDoctorId)?.username}. 
-              {doctors.find(d => d.id === deletingDoctorId)?.patientCount > 0 ? ` Patients will be reassigned to Dr. ${doctors.find(d => d.id === assignDoctorIdForDeletion)?.username || 'another doctor'}.` : ''}
+              {doctors.find(d => d.id === deletingDoctorId)?.patientCount ?? 0 > 0 ? ` Patients will be reassigned to Dr. ${doctors.find(d => d.id === assignDoctorIdForDeletion)?.username || 'another doctor'}.` : ''}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -481,3 +563,4 @@ export default function UserManagementPage() {
     </AppLayout>
   );
 }
+
