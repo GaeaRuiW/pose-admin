@@ -6,19 +6,520 @@ import {notFound} from 'next/navigation';
 export const locales = ['en', 'zh'];
 export const defaultLocale = 'en';
 
+// Hardcoded messages for testing
+const messagesData = {
+  en: {
+    LoginPage: {
+      title: "MediAdmin Login",
+      description: "Enter your credentials to access the admin panel",
+      emailLabel: "Email",
+      emailPlaceholder: "admin@medadmin.com",
+      passwordLabel: "Password",
+      passwordPlaceholder: "password",
+      loginButton: "Login",
+      loggingInButton: "Logging In...",
+      copyright: "© {year} MediAdmin. All rights reserved."
+    },
+    UserNav: {
+      profile: "Profile",
+      settings: "Settings",
+      support: "Support",
+      logout: "Log out"
+    },
+    AppLayout: {
+      dashboard: "Dashboard",
+      userManagement: "User Management",
+      videoManagement: "Video Management",
+      analysisManagement: "Analysis Management",
+      loadingApp: "Loading MediAdmin..."
+    },
+    DashboardPage: {
+      title: "Dashboard",
+      totalDoctors: "Total Doctors",
+      totalDoctorsDesc: "Number of active doctors",
+      totalPatients: "Total Patients",
+      totalPatientsDesc: "Registered patients in system",
+      uploadedVideos: "Uploaded Videos",
+      uploadedVideosDesc: "Consultation videos",
+      dataAnalyses: "Data Analyses",
+      dataAnalysesDesc: "Analyses performed",
+      analysisTrendsTitle: "Data Analysis Trends",
+      analysisTrendsDesc: "Number of data analyses per day over the last few months.",
+      noData: "No dashboard data available.",
+      errorLoading: "Error Loading Dashboard",
+      retry: "Retry",
+      loading: "Loading dashboard...",
+      noTrendData: "No analysis trend data available."
+    },
+    UserManagementPage: {
+      title: "User Management",
+      doctorsTab: "Doctors",
+      patientsTab: "Patients",
+      searchDoctorsPlaceholder: "Search doctors...",
+      addDoctorButton: "Add Doctor",
+      searchPatientsPlaceholder: "Search patients...",
+      addPatientButton: "Add Patient",
+      showingPatientsForDoctor: "Showing patients for Dr. {doctorName}.",
+      showAllPatients: "Show All Patients",
+      loadingUserData: "Loading user data...",
+      errorLoadingData: "Error Loading Data",
+      confirmDeleteDoctorTitle: "Are you sure?",
+      confirmDeleteDoctorDescription: "This action cannot be undone. This will permanently delete Dr. {doctorName}. {reassignMessage}",
+      reassignPatientsMessage: "Patients will be reassigned to Dr. {assignDoctorName}.",
+      noOtherDoctorToReassign: "This doctor has patients and there are no other doctors to reassign them to.",
+      cannotDeleteDoctor: "Cannot Delete Doctor",
+      confirmDeletePatientTitle: "Are you sure?",
+      confirmDeletePatientDescription: "This action cannot be undone. This will permanently delete patient {patientName}."
+    },
+    DoctorFormDialog: {
+      addTitle: "Add New Doctor",
+      editTitle: "Edit Doctor",
+      addDescription: "Enter the details for the new doctor.",
+      editDescription: "Update the details for this doctor.",
+      usernameLabel: "Username",
+      usernamePlaceholder: "drjohn",
+      emailLabel: "Email",
+      emailPlaceholder: "john.doe@example.com",
+      passwordLabel: "Password",
+      passwordPlaceholderNew: "Enter password",
+      passwordPlaceholderEdit: "Leave blank to keep current",
+      passwordDescriptionNew: "Password must be at least 6 characters.",
+      passwordDescriptionEdit: "Leave blank to keep the current password. New password must be at least 6 characters.",
+      phoneLabel: "Phone",
+      phonePlaceholder: "555-123-4567",
+      departmentLabel: "Department",
+      departmentPlaceholder: "Cardiology",
+      roleLabel: "Role",
+      selectRolePlaceholder: "Select role",
+      roleNone: "None",
+      roleAdmin: "Admin",
+      roleDoctor: "Doctor",
+      notesLabel: "Notes",
+      notesPlaceholder: "Optional notes about the doctor...",
+      addButton: "Add Doctor",
+      saveButton: "Save Changes"
+    },
+    PatientFormDialog: {
+      addTitle: "Add New Patient",
+      editTitle: "Edit Patient",
+      addDescription: "Enter the details for the new patient.",
+      editDescription: "Update the details for this patient.",
+      nameLabel: "Patient Name",
+      namePlaceholder: "Jane Roe",
+      ageLabel: "Age",
+      agePlaceholder: "30",
+      genderLabel: "Gender",
+      selectGenderPlaceholder: "Select gender",
+      genderMale: "Male",
+      genderFemale: "Female",
+      genderOther: "Other",
+      caseIdLabel: "Case ID / Medical Record Number",
+      caseIdPlaceholder: "MRN12345",
+      doctorLabel: "Attending Doctor",
+      selectDoctorPlaceholder: "Select doctor",
+      doctorNone: "None",
+      notesLabel: "Notes",
+      notesPlaceholder: "Optional notes about the patient...",
+      addButton: "Add Patient",
+      saveButton: "Save Changes",
+      noDoctorsAvailable: "No doctors available"
+    },
+    DoctorsTable: {
+      username: "Username",
+      email: "Email",
+      phone: "Phone",
+      department: "Department",
+      patientCount: "Patient Count",
+      role: "Role",
+      notes: "Notes",
+      actions: "Actions",
+      noDoctorsFound: "No doctors found.",
+      edit: "Edit",
+      delete: "Delete",
+      openMenu: "Open menu"
+    },
+    PatientsTable: {
+      name: "Name",
+      age: "Age",
+      gender: "Gender",
+      caseId: "Case ID / MRN",
+      attendingDoctor: "Attending Doctor",
+      notes: "Notes",
+      videoCount: "Video Count",
+      analysisCount: "Analysis Count",
+      actions: "Actions",
+      noPatientsFound: "No patients found.",
+      edit: "Edit",
+      delete: "Delete",
+      openMenu: "Open menu",
+      notApplicable: "N/A"
+    },
+    VideosPage: {
+      title: "Video Management",
+      searchPlaceholder: "Search videos...",
+      showingVideosForPatient": "Showing videos for patient: {patientName} (Case ID: {caseId}).",
+      showAllVideos: "Show All Videos",
+      loadingVideoData": "Loading video data...",
+      errorLoadingVideos": "Error Loading Videos",
+      confirmDeleteVideoTitle": "Are you sure?",
+      confirmDeleteVideoDescription": "This action will mark the video as deleted. Associated analyses might also be affected.",
+      videoDeletedToast": "Video Deleted",
+      videoDeletedDesc": "Video has been deleted."
+    },
+    VideosTable: {
+      thumbnail: "Thumbnail",
+      videoInfo: "Video Info",
+      patient: "Patient",
+      uploadDate": "Upload Date",
+      analysisId": "Analysis ID",
+      actions: "Actions",
+      noVideosFound": "No videos found.",
+      playVideo": "Play Video",
+      viewRawVideo": "View Raw Video",
+      delete: "Delete",
+      videoTypeOriginal": "Original",
+      videoTypeAnalysis": "Analysis",
+      videoTypeUnknown": "Unknown",
+      openMenu": "Open menu",
+      notApplicable": "N/A"
+    },
+    VideoPlayerModal": {
+      title: "Video Player",
+      close": "Close"
+    },
+    AnalysesPage": {
+      title: "Analysis Management",
+      searchPlaceholder": "Search analyses...",
+      showingAnalysesForPatient": "Showing analyses for patient: {patientName}.",
+      showingAnalysesForVideo": "Showing analyses for video: {videoName}.",
+      showingDetailsForAnalysis": "Showing details for Analysis ID: {analysisId}.",
+      showingAnalysesWithParent": "Showing analyses with Parent ID: {parentId}.",
+      showAllAnalyses": "Show All Analyses",
+      loadingAnalysisData": "Loading analysis data...",
+      errorLoadingAnalyses": "Error Loading Analyses",
+      confirmDeleteAnalysisTitle": "Are you sure?",
+      confirmDeleteAnalysisDescription": "This action will mark the analysis (Action ID: {analysisId}) as deleted. This may also affect associated inference videos.",
+      analysisDeletedToast": "Analysis Deleted",
+      analysisDeletedDesc": "Analysis {analysisId} has been deleted."
+    },
+    AnalysesTable: {
+      analysisId": "Analysis ID",
+      parentId": "Parent ID",
+      patient: "Patient",
+      originalVideo": "Original Video",
+      status: "Status",
+      progress": "Progress",
+      createdDate": "Created Date",
+      actions": "Actions",
+      noAnalysesFound": "No analyses found.",
+      viewDetails": "View Details",
+      viewProcessedVideo": "View Processed Video",
+      delete: "Delete",
+      openMenu": "Open menu",
+      notApplicable": "N/A"
+    },
+    ToastMessages: {
+      error: "Error",
+      loginSuccessTitle": "Login Successful",
+      loginSuccessDesc": "Welcome back!",
+      loginFailedTitle": "Login Failed",
+      loginFailedDesc": "Invalid email or password.",
+      doctorAddedTitle": "Doctor Added",
+      doctorUpdatedTitle": "Doctor Updated",
+      doctorSaveSuccessDesc": "{doctorName} has been saved successfully.",
+      doctorDeletedTitle": "Doctor Deleted",
+      doctorDeletedDesc": "Doctor has been deleted.",
+      patientAddedTitle": "Patient Added",
+      patientUpdatedTitle": "Patient Updated",
+      patientSaveSuccessDesc": "{patientName} has been saved successfully.",
+      patientDeletedTitle": "Patient Deleted",
+      patientDeletedDesc": "Patient has been deleted.",
+      fetchAnalysesError": "Could not fetch analyses.",
+      fetchVideosError": "Could not fetch videos.",
+      fetchPatientsError": "Could not fetch patients.",
+      fetchDoctorsError": "Could not fetch doctors.",
+      fetchDashboardError": "Error Fetching Dashboard Data",
+      saveDoctorError": "Failed to save doctor: {statusText}",
+      savePatientError": "Failed to save patient: {statusText}",
+      deleteDoctorError": "Failed to delete doctor: {statusText}",
+      deletePatientError": "Failed to delete patient: {statusText}",
+      deleteVideoError": "Failed to delete video: {statusText}",
+      deleteAnalysisError": "Failed to delete analysis: {statusText}"
+    },
+    Common: {
+      retry": "Retry",
+      cancel": "Cancel",
+      delete: "Delete",
+      notApplicable": "N/A",
+      saveChanges": "Save Changes"
+    }
+  },
+  zh: {
+    LoginPage: {
+      title: "医疗管理后台",
+      description: "输入您的凭据以访问管理面板",
+      emailLabel: "邮箱",
+      emailPlaceholder: "admin@medadmin.com",
+      passwordLabel: "密码",
+      passwordPlaceholder: "密码",
+      loginButton: "登录",
+      loggingInButton: "登录中...",
+      copyright: "© {year} MediAdmin. 版权所有。"
+    },
+    UserNav: {
+      profile: "个人资料",
+      settings: "设置",
+      support: "支持",
+      logout: "登出"
+    },
+    AppLayout: {
+      dashboard: "仪表盘",
+      userManagement: "用户管理",
+      videoManagement: "视频管理",
+      analysisManagement: "分析管理",
+      loadingApp: "正在加载 MediAdmin..."
+    },
+    DashboardPage: {
+      title: "仪表盘",
+      totalDoctors: "医生总数",
+      totalDoctorsDesc: "活跃医生数量",
+      totalPatients: "患者总数",
+      totalPatientsDesc: "系统中注册的患者",
+      uploadedVideos: "已上传视频",
+      uploadedVideosDesc: "会诊视频",
+      dataAnalyses: "数据分析",
+      dataAnalysesDesc: "已执行的分析",
+      analysisTrendsTitle": "数据分析趋势",
+      analysisTrendsDesc": "过去几个月每日数据分析数量。",
+      noData: "无仪表盘数据。",
+      errorLoading: "加载仪表盘时出错",
+      retry: "重试",
+      loading: "正在加载仪表盘...",
+      noTrendData": "无分析趋势数据。"
+    },
+    UserManagementPage: {
+      title: "用户管理",
+      doctorsTab: "医生",
+      patientsTab: "患者",
+      searchDoctorsPlaceholder: "搜索医生...",
+      addDoctorButton: "添加医生",
+      searchPatientsPlaceholder: "搜索患者...",
+      addPatientButton: "添加患者",
+      showingPatientsForDoctor: "显示 {doctorName}医生的患者。",
+      showAllPatients: "显示所有患者",
+      loadingUserData": "正在加载用户数据...",
+      errorLoadingData": "加载数据时出错",
+      confirmDeleteDoctorTitle": "您确定吗？",
+      confirmDeleteDoctorDescription": "此操作无法撤销。这将永久删除{doctorName}医生。{reassignMessage}",
+      reassignPatientsMessage": "患者将被重新分配给{assignDoctorName}医生。",
+      noOtherDoctorToReassign": "该医生名下有患者，并且没有其他医生可以重新分配他们。",
+      cannotDeleteDoctor": "无法删除医生",
+      confirmDeletePatientTitle": "您确定吗？",
+      confirmDeletePatientDescription": "此操作无法撤销。这将永久删除患者{patientName}。"
+    },
+    DoctorFormDialog: {
+      addTitle: "添加新医生",
+      editTitle: "编辑医生",
+      addDescription: "输入新医生的详细信息。",
+      editDescription: "更新此医生的详细信息。",
+      usernameLabel: "用户名",
+      usernamePlaceholder: "张医生",
+      emailLabel: "邮箱",
+      emailPlaceholder: "zhang.san@example.com",
+      passwordLabel: "密码",
+      passwordPlaceholderNew: "输入密码",
+      passwordPlaceholderEdit: "留空以保持当前密码",
+      passwordDescriptionNew: "密码必须至少为6个字符。",
+      passwordDescriptionEdit: "留空以保持当前密码。新密码必须至少为6个字符。",
+      phoneLabel: "电话",
+      phonePlaceholder: "13800138000",
+      departmentLabel: "科室",
+      departmentPlaceholder: "心脏科",
+      roleLabel: "角色",
+      selectRolePlaceholder: "选择角色",
+      roleNone: "无",
+      roleAdmin: "管理员",
+      roleDoctor: "医生",
+      notesLabel: "备注",
+      notesPlaceholder: "关于医生的可选备注...",
+      addButton: "添加医生",
+      saveButton": "保存更改"
+    },
+    PatientFormDialog: {
+      addTitle: "添加新患者",
+      editTitle: "编辑患者",
+      addDescription: "输入新患者的详细信息。",
+      editDescription: "更新此患者的详细信息。",
+      nameLabel: "患者姓名",
+      namePlaceholder: "李四",
+      ageLabel: "年龄",
+      agePlaceholder: "30",
+      genderLabel: "性别",
+      selectGenderPlaceholder: "选择性别",
+      genderMale: "男性",
+      genderFemale: "女性",
+      genderOther: "其他",
+      caseIdLabel: "病例号 / 病历号",
+      caseIdPlaceholder: "MRN12345",
+      doctorLabel: "主治医生",
+      selectDoctorPlaceholder: "选择医生",
+      doctorNone: "无",
+      notesLabel: "备注",
+      notesPlaceholder: "关于患者的可选备注...",
+      addButton: "添加患者",
+      saveButton: "保存更改",
+      noDoctorsAvailable": "暂无医生可选"
+    },
+    DoctorsTable: {
+      username: "用户名",
+      email: "邮箱",
+      phone: "电话",
+      department: "科室",
+      patientCount: "患者数量",
+      role: "角色",
+      notes: "备注",
+      actions: "操作",
+      noDoctorsFound: "未找到医生。",
+      edit: "编辑",
+      delete: "删除",
+      openMenu: "打开菜单"
+    },
+    PatientsTable: {
+      name: "姓名",
+      age: "年龄",
+      gender: "性别",
+      caseId: "病例号 / 病历号",
+      attendingDoctor: "主治医生",
+      notes: "备注",
+      videoCount: "视频数量",
+      analysisCount: "分析数量",
+      actions: "操作",
+      noPatientsFound: "未找到患者。",
+      edit: "编辑",
+      delete: "删除",
+      openMenu: "打开菜单",
+      notApplicable": "不适用"
+    },
+    VideosPage: {
+      title: "视频管理",
+      searchPlaceholder: "搜索视频...",
+      showingVideosForPatient": "显示患者 {patientName} (病例号: {caseId}) 的视频。",
+      showAllVideos: "显示所有视频",
+      loadingVideoData": "正在加载视频数据...",
+      errorLoadingVideos": "加载视频时出错",
+      confirmDeleteVideoTitle": "您确定吗？",
+      confirmDeleteVideoDescription": "此操作会将视频标记为已删除。相关的分析可能也会受到影响。",
+      videoDeletedToast": "视频已删除",
+      videoDeletedDesc": "视频已被删除。"
+    },
+    VideosTable: {
+      thumbnail: "缩略图",
+      videoInfo: "视频信息",
+      patient: "患者",
+      uploadDate": "上传日期",
+      analysisId": "分析ID",
+      actions: "操作",
+      noVideosFound": "未找到视频。",
+      playVideo": "播放视频",
+      viewRawVideo": "查看原始视频",
+      delete: "删除",
+      videoTypeOriginal": "原始视频",
+      videoTypeAnalysis": "分析视频",
+      videoTypeUnknown": "未知",
+      openMenu": "打开菜单",
+      notApplicable": "不适用"
+    },
+    VideoPlayerModal: {
+      title: "视频播放器",
+      close": "关闭"
+    },
+    AnalysesPage: {
+      title: "分析管理",
+      searchPlaceholder": "搜索分析...",
+      showingAnalysesForPatient": "显示患者 {patientName} 的分析。",
+      showingAnalysesForVideo": "显示视频 {videoName} 的分析。",
+      showingDetailsForAnalysis": "显示分析ID {analysisId} 的详情。",
+      showingAnalysesWithParent": "显示父ID为 {parentId} 的分析。",
+      showAllAnalyses": "显示所有分析",
+      loadingAnalysisData": "正在加载分析数据...",
+      errorLoadingAnalyses": "加载分析时出错",
+      confirmDeleteAnalysisTitle": "您确定吗？",
+      confirmDeleteAnalysisDescription": "此操作会将分析（操作ID：{analysisId}）标记为已删除。这可能也会影响相关的推理视频。",
+      analysisDeletedToast": "分析已删除",
+      analysisDeletedDesc": "分析 {analysisId} 已被删除。"
+    },
+    AnalysesTable: {
+      analysisId": "分析ID",
+      parentId": "父ID",
+      patient: "患者",
+      originalVideo": "原始视频",
+      status: "状态",
+      progress": "进度",
+      createdDate": "创建日期",
+      actions: "操作",
+      noAnalysesFound": "未找到分析。",
+      viewDetails": "查看详情",
+      viewProcessedVideo": "查看处理后视频",
+      delete: "删除",
+      openMenu: "打开菜单",
+      notApplicable": "不适用"
+    },
+    ToastMessages: {
+      error: "错误",
+      loginSuccessTitle": "登录成功",
+      loginSuccessDesc": "欢迎回来！",
+      loginFailedTitle": "登录失败",
+      loginFailedDesc": "邮箱或密码无效。",
+      doctorAddedTitle": "医生已添加",
+      doctorUpdatedTitle": "医生已更新",
+      doctorSaveSuccessDesc": "{doctorName} 已成功保存。",
+      doctorDeletedTitle": "医生已删除",
+      doctorDeletedDesc": "医生已被删除。",
+      patientAddedTitle": "患者已添加",
+      patientUpdatedTitle": "患者已更新",
+      patientSaveSuccessDesc": "{patientName} 已成功保存。",
+      patientDeletedTitle": "患者已删除",
+      patientDeletedDesc": "患者已被删除。",
+      fetchAnalysesError": "无法获取分析数据。",
+      fetchVideosError": "无法获取视频数据。",
+      fetchPatientsError": "无法获取患者数据。",
+      fetchDoctorsError": "无法获取医生数据。",
+      fetchDashboardError": "获取仪表盘数据时出错",
+      saveDoctorError": "保存医生失败：{statusText}",
+      savePatientError": "保存患者失败：{statusText}",
+      deleteDoctorError": "删除医生失败：{statusText}",
+      deletePatientError": "删除患者失败：{statusText}",
+      deleteVideoError": "删除视频失败：{statusText}",
+      deleteAnalysisError": "删除分析失败：{statusText}"
+    },
+    Common: {
+      retry: "重试",
+      cancel: "取消",
+      delete: "删除",
+      notApplicable": "不适用",
+      saveChanges": "保存更改"
+    }
+  }
+};
+
 export default getRequestConfig(async ({locale}) => {
   // Validate that the incoming `locale` parameter is valid
-  if (!locales.includes(locale as any)) notFound();
-
-  try {
-    // Using relative path from src/i18n.ts to src/messages/
-    const messages = (await import(`./messages/${locale}.json`)).default;
-    return {
-      messages
-    };
-  } catch (error) {
-    // If messages fail to load, treat as not found
-    console.error(`Failed to load messages for locale ${locale} (tried with relative path ./messages/):`, error);
+  const isValidLocale = locales.includes(locale as any);
+  if (!isValidLocale) {
+    console.error(`[i18n.ts] Invalid locale detected: "${locale}". Expected one of: ${locales.join(', ')}. Calling notFound().`);
     notFound();
   }
+
+  // @ts-ignore
+  const localeMessages = messagesData[locale] || messagesData[defaultLocale];
+
+  if (!localeMessages) {
+    console.error(`[i18n.ts] No messages found for locale: ${locale} or defaultLocale ${defaultLocale}. This indicates an issue in i18n.ts. Calling notFound().`);
+    notFound();
+  }
+  
+  return {
+    messages: localeMessages
+  };
 });
+
