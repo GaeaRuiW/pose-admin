@@ -12,18 +12,18 @@ export const mockPatients: Patient[] = [];
 // Dashboard metrics and chart data might still be used by the dashboard page.
 // If the dashboard also needs to be connected to real data, these would also be replaced.
 export const mockDashboardMetrics: DashboardMetrics = {
-  doctorCount: 0, // Will be updated dynamically if dashboard uses real data
-  patientCount: 0, // Will be updated dynamically
+  doctorCount: 0, 
+  patientCount: 0, 
   videoCount: 0,
   dataAnalysisCount: 0,
 };
 
 export const mockDataAnalysisChartData: DataAnalysisDataPoint[] = [
-  { date: 'Jan \'24', analyses: 65 },
-  { date: 'Feb \'24', analyses: 59 },
-  { date: 'Mar \'24', analyses: 80 },
-  { date: 'Apr \'24', analyses: 81 },
-  { date: 'May \'24', analyses: 56 },
-  { date: 'Jun \'24', analyses: 70 },
-  { date: 'Jul \'24', analyses: 75 },
+  { date: 'Jan \'24', analyses: 0 },
+  { date: 'Feb \'24', analyses: 0 },
+  { date: 'Mar \'24', analyses: 0 },
+  { date: 'Apr \'24', analyses: 0 },
+  { date: 'May \'24', analyses: 0 },
+  { date: 'Jun \'24', analyses: 0 },
+  { date: 'Jul \'24', analyses: 0 },
 ];

@@ -4,10 +4,10 @@ export interface Doctor {
   username: string; 
   password?: string; 
   email: string;
-  phone: string;
-  department: string;
-  role_id: number; 
-  notes?: string; 
+  phone: string | null; // Allow null
+  department: string | null; // Allow null
+  role_id: number | null; // Allow null
+  notes?: string | null; // Allow null
   create_time?: string;
   update_time?: string;
   patientCount?: number; 
@@ -16,11 +16,11 @@ export interface Doctor {
 export interface Patient {
   id: string; 
   username: string; 
-  age: number;
-  gender: 'Male' | 'Female' | 'Other'; 
+  age: number | null; // Allow null
+  gender: 'Male' | 'Female' | 'Other' | null; // Allow null
   case_id: string; 
-  doctor_id: string; 
-  notes?: string; // Added notes field
+  doctor_id: string | null; // Allow null
+  notes?: string | null; 
   create_time?: string;
   update_time?: string;
   attendingDoctorName?: string; 
@@ -47,4 +47,3 @@ export interface User {
   avatarUrl?: string;
   role_id?: number; 
 }
-
