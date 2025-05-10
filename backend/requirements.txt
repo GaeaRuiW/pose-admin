@@ -1,0 +1,8 @@
+bcrypt
+redis
+fastapi[standard]
+uvicorn
+sqlmodel
+pyecharts
+psycopg2
+opencv-python-headless
