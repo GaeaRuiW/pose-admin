@@ -25,8 +25,8 @@ class CreateDoctorManagement(BASE):
     password: str
     email: str
     phone: Optional[str] = None
-    department: Optional[str] = None  # Changed from "康复科"
-    role_id: Optional[int] = None     # Changed from 2
+    department: Optional[str] = None
+    role_id: Optional[int] = None
     notes: Optional[str] = None
 
 
@@ -36,7 +36,6 @@ class UpdateDoctor(BASE):
     email: Optional[str] = None
     phone: Optional[str] = None
     password: Optional[str] = None
-    # Already optional, ensure no default if not intended
     department: Optional[str] = None
     role_id: Optional[int] = None
     notes: Optional[str] = None
@@ -51,10 +50,10 @@ class DeleteDoctor(BASE):
 
 class CreatePatientManagement(BASE):
     username: str
-    age: Optional[int] = None       # Changed from int
-    gender: Optional[str] = None    # Changed from str
+    age: Optional[int] = None
+    gender: Optional[str] = None
     case_id: str
-    doctor_id: Optional[int] = None  # Changed from int
+    doctor_id: Optional[int] = None
     notes: Optional[str] = None
 
 
@@ -98,6 +97,30 @@ class DataAnalysisDataPoint(BaseModel):
     date: str
     analyses: int
 
+class VideoDetailResponse(BaseModel):
+    id: int
+    patient_id: int
+    patient_username: Optional[str] = "N/A"
+    action_id: Optional[int] = None
+    original_video: bool
+    inference_video: bool
+    video_path: str
+    create_time: str
+    update_time: str
+
+class ActionDetailResponse(BaseModel):
+    id: int
+    parent_id: Optional[int] = None
+    video_id: int # Original video ID
+    original_video_path: Optional[str] = "N/A"
+    patient_id: int
+    patient_username: Optional[str] = "N/A"
+    status: str
+    progress: str
+    create_time: str
+    update_time: str
+
+
 # --- Helper for Authorization ---
 
 
@@ -119,11 +142,6 @@ def login(login_data: Login, session: SessionDep = SessionDep):
     doctor = session.query(Doctors).filter(
         Doctors.email == login_data.email, Doctors.is_deleted == False).first()
 
-    # Use your actual password checking function
-    # For example, if using bcrypt directly:
-    # from common.utils import check_password
-    # if not doctor or not check_password(login_data.password, doctor.password):
-    # For now, assuming hash_password is an object with a check_password method
     if not doctor or not check_password(login_data.password, doctor.password):
         raise HTTPException(
             status_code=401, detail="Invalid email or password")
@@ -178,7 +196,6 @@ async def create_doctor_management(doctor_data: CreateDoctorManagement, session:
         email=doctor_data.email,
         phone=doctor_data.phone,
         department=doctor_data.department,
-        # Default to Doctor role if not provided
         role_id=doctor_data.role_id if doctor_data.role_id is not None else 2,
         notes=doctor_data.notes,
         create_time=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
@@ -221,11 +238,11 @@ def update_doctor(doctor_update_data: UpdateDoctor, session: SessionDep = Sessio
                 status_code=400, detail="Email already taken by another doctor.")
         doctor_db.email = doctor_update_data.email
 
-    if doctor_update_data.phone is not None:  # Allow setting phone to empty or new value
+    if doctor_update_data.phone is not None:
         doctor_db.phone = doctor_update_data.phone
-    if doctor_update_data.password:  # Only update password if provided
+    if doctor_update_data.password:
         doctor_db.password = hash_password(doctor_update_data.password)
-    if doctor_update_data.department is not None:  # Allow setting department to empty or new value
+    if doctor_update_data.department is not None:
         doctor_db.department = doctor_update_data.department
     if doctor_update_data.role_id is not None:
         doctor_db.role_id = doctor_update_data.role_id
@@ -356,9 +373,9 @@ def update_patient(patient_update_data: UpdatePatient, session: SessionDep = Ses
 
     if patient_update_data.username:
         patient_db.username = patient_update_data.username
-    if patient_update_data.age is not None:  # Allows setting age to 0 or other valid numbers
+    if patient_update_data.age is not None:
         patient_db.age = patient_update_data.age
-    if patient_update_data.gender is not None:  # Allows setting gender to empty string or new value
+    if patient_update_data.gender is not None:
         patient_db.gender = patient_update_data.gender
 
     if patient_update_data.case_id and patient_update_data.case_id != patient_db.case_id:
@@ -369,10 +386,8 @@ def update_patient(patient_update_data: UpdatePatient, session: SessionDep = Ses
                 status_code=400, detail="Case ID already taken by another patient.")
         patient_db.case_id = patient_update_data.case_id
 
-    # Handle doctor_id update, including setting to None
-    if patient_update_data.doctor_id is not None:  # doctor_id provided in payload
-        # Assuming 0 or a specific value means "set to null" if frontend sends it like that. Or frontend sends null.
-        if patient_update_data.doctor_id == 0:
+    if patient_update_data.doctor_id is not None:
+        if patient_update_data.doctor_id == 0: # Convention for unassigning
             patient_db.doctor_id = None
         else:
             new_assigned_doctor = session.query(Doctors).filter(
@@ -381,9 +396,9 @@ def update_patient(patient_update_data: UpdatePatient, session: SessionDep = Ses
                 raise HTTPException(
                     status_code=404, detail="New assigned doctor not found")
             patient_db.doctor_id = patient_update_data.doctor_id
-    # doctor_id is explicitly set to null in payload
-    elif 'doctor_id' in patient_update_data.model_fields_set and patient_update_data.doctor_id is None:
+    elif 'doctor_id' in patient_update_data.model_fields_set and patient_update_data.doctor_id is None: # Explicitly setting to null
         patient_db.doctor_id = None
+
 
     if patient_update_data.notes is not None:
         patient_db.notes = patient_update_data.notes
@@ -436,7 +451,7 @@ def delete_patient(patient_delete_data: DeletePatient, session: SessionDep = Ses
                 stage.is_deleted = True
                 stage.update_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-    else:
+    else: # Hard delete
         actions_to_delete = session.query(Action).filter(
             Action.patient_id == patient_db.id).all()
         for action in actions_to_delete:
@@ -451,7 +466,6 @@ def delete_patient(patient_delete_data: DeletePatient, session: SessionDep = Ses
         videos_to_delete = session.query(VideoPath).filter(
             VideoPath.patient_id == patient_db.id).all()
         for video in videos_to_delete:
-            # if os.path.exists(video.video_path): os.remove(video.video_path)
             session.delete(video)
 
         session.delete(patient_db)
@@ -519,84 +533,132 @@ def get_patient_by_id(patient_id: int = Query(...),
     }
 
 
-@router.get("/actions")
-def get_actions(admin_doctor_id: int = Query(...),
-                session: SessionDep = SessionDep):
+@router.get("/actions", response_model=List[ActionDetailResponse])
+def get_actions_management(admin_doctor_id: int = Query(...),
+                           session: SessionDep = SessionDep):
     authorize_admin(admin_doctor_id, session)
-    actions = session.query(Action).filter(
-        Action.is_deleted == False).all()
-    if not actions:
+    
+    query_results = session.query(
+        Action,
+        Patients.username.label("patient_username"),
+        VideoPath.video_path.label("original_video_path")
+    ).join(
+        Patients, Action.patient_id == Patients.id, isouter=True
+    ).join(
+        VideoPath, Action.video_id == VideoPath.id, isouter=True # video_id in Action refers to original video
+    ).filter(
+        Action.is_deleted == False
+    ).order_by(Action.create_time.desc()).all()
+
+    if not query_results:
         return []
-    return [action.to_dict() for action in actions]
+
+    response_list = []
+    for action, patient_username, original_video_path in query_results:
+        action_dict = action.to_dict()
+        action_dict["patient_username"] = patient_username or "N/A"
+        action_dict["original_video_path"] = original_video_path or "N/A"
+        response_list.append(ActionDetailResponse(**action_dict))
+        
+    return response_list
 
 
-@router.get("/videos")
-def get_videos(admin_doctor_id: int = Query(...),
-               session: SessionDep = SessionDep):
+@router.get("/videos", response_model=List[VideoDetailResponse])
+def get_videos_management(admin_doctor_id: int = Query(...),
+                          session: SessionDep = SessionDep):
     authorize_admin(admin_doctor_id, session)
-    videos = session.query(VideoPath).filter(
-        VideoPath.is_deleted == False).all()
-    if not videos:
+    
+    query_results = session.query(
+        VideoPath,
+        Patients.username.label("patient_username")
+    ).join(
+        Patients, VideoPath.patient_id == Patients.id, isouter=True # Use isouter in case patient is deleted
+    ).filter(
+        VideoPath.is_deleted == False
+    ).order_by(VideoPath.create_time.desc()).all()
+
+    if not query_results:
         return []
-    return [video.to_dict() for video in videos]
+
+    response_list = []
+    for video, patient_username in query_results:
+        video_dict = video.to_dict()
+        video_dict["patient_username"] = patient_username or "N/A" # Handle if patient was deleted
+        response_list.append(VideoDetailResponse(**video_dict))
+        
+    return response_list
 
 
-@router.delete("/video")
-def delete_video(video_del_data: DeleteVideo, session: SessionDep = SessionDep):
+@router.delete("/video") # This already exists from a previous step
+def delete_video_management(video_del_data: DeleteVideo, session: SessionDep = SessionDep):
     authorize_admin(video_del_data.admin_doctor_id, session)
     video_db = session.query(VideoPath).filter(
         VideoPath.id == video_del_data.video_id, VideoPath.is_deleted == False).first()
     if not video_db:
         raise HTTPException(status_code=404, detail="Video not found")
 
-    if not video_del_data.force:
+    if not video_del_data.force: # Soft delete
         video_db.is_deleted = True
         video_db.update_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        actions = session.query(Action).filter(
-            Action.video_id == video_db.id, Action.is_deleted == False).all()
-        for action in actions:
-            action.is_deleted = True
-            action.update_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            # Soft delete stages and steps
-            stages = session.query(Stage).filter(
-                Stage.action_id == action.id, Stage.is_deleted == False).all()
-            for stage in stages:
-                stage.is_deleted = True
-                stage.update_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                steps = session.query(StepsInfo).filter(
-                    StepsInfo.stage_id == stage.id, StepsInfo.is_deleted == False).all()
-                for step in steps:
-                    step.is_deleted = True
-                    step.update_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    else:
-        actions = session.query(Action).filter(
-            Action.video_id == video_del_data.video_id).all()
-        for action in actions:
-            stages = session.query(Stage).filter(
-                Stage.action_id == action.id).all()
-            for stage in stages:
-                session.query(StepsInfo).filter(
-                    StepsInfo.stage_id == stage.id).delete(synchronize_session=False)
-                session.delete(stage)
-            session.delete(action)
-        # if os.path.exists(video_db.video_path): os.remove(video_db.video_path)
+        # Soft delete related actions if this video is an original video
+        if video_db.original_video:
+            actions = session.query(Action).filter(
+                Action.video_id == video_db.id, Action.is_deleted == False).all()
+            for action in actions:
+                action.is_deleted = True
+                action.update_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                # Soft delete stages and steps for this action
+                stages = session.query(Stage).filter(
+                    Stage.action_id == action.id, Stage.is_deleted == False).all()
+                for stage in stages:
+                    stage.is_deleted = True
+                    stage.update_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    steps = session.query(StepsInfo).filter(
+                        StepsInfo.stage_id == stage.id, StepsInfo.is_deleted == False).all()
+                    for step in steps:
+                        step.is_deleted = True
+                        step.update_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                # Soft delete inference videos associated with this action
+                inference_videos = session.query(VideoPath).filter(
+                    VideoPath.action_id == action.id, VideoPath.inference_video == True, VideoPath.is_deleted == False).all()
+                for inf_vid in inference_videos:
+                    inf_vid.is_deleted = True
+                    inf_vid.update_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    else: # Hard delete
+        # If it's an original video, delete its actions, stages, steps, and inference videos
+        if video_db.original_video:
+            actions = session.query(Action).filter(Action.video_id == video_del_data.video_id).all()
+            for action in actions:
+                # Delete inference videos for this action
+                session.query(VideoPath).filter(VideoPath.action_id == action.id, VideoPath.inference_video == True).delete(synchronize_session=False)
+                stages = session.query(Stage).filter(Stage.action_id == action.id).all()
+                for stage in stages:
+                    session.query(StepsInfo).filter(StepsInfo.stage_id == stage.id).delete(synchronize_session=False)
+                    session.delete(stage)
+                session.delete(action)
+        # If it's an inference video, it will be deleted when its action is deleted or if deleted directly
+        # For direct deletion of an inference video, ensure its corresponding action isn't left orphaned if needed.
+        # The current logic deletes the video record. Physical file deletion is commented out.
         session.delete(video_db)
 
     session.commit()
     return {"message": "Video deleted successfully"}
 
 
-@router.delete("/action")
-def delete_action(action_del_data: DeleteAction, session: SessionDep = SessionDep):
+@router.delete("/action") # This already exists
+def delete_action_management(action_del_data: DeleteAction, session: SessionDep = SessionDep):
     authorize_admin(action_del_data.admin_doctor_id, session)
     action_db = session.query(Action).filter(
         Action.id == action_del_data.action_id, Action.is_deleted == False).first()
     if not action_db:
         raise HTTPException(status_code=404, detail="Action not found")
 
+    # Soft delete action
     action_db.is_deleted = True
     action_db.update_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
+    # Soft delete associated stages and steps
     stages = session.query(Stage).filter(
         Stage.action_id == action_db.id, Stage.is_deleted == False).all()
     for stage in stages:
@@ -608,7 +670,16 @@ def delete_action(action_del_data: DeleteAction, session: SessionDep = SessionDe
             step.is_deleted = True
             step.update_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-    if action_db.parent_id == action_db.id:
+    # Soft delete associated inference videos
+    inference_videos = session.query(VideoPath).filter(
+        VideoPath.action_id == action_db.id, VideoPath.inference_video == True, VideoPath.is_deleted == False
+    ).all()
+    for inf_video in inference_videos:
+        inf_video.is_deleted = True
+        inf_video.update_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    
+    # If this action is a parent, soft delete child actions as well
+    if action_db.parent_id == action_db.id: # This indicates it's a primary action that might have sub-actions
         child_actions = session.query(Action).filter(
             Action.parent_id == action_db.id, Action.id != action_db.id, Action.is_deleted == False).all()
         for child_action in child_actions:
@@ -624,6 +695,14 @@ def delete_action(action_del_data: DeleteAction, session: SessionDep = SessionDe
                 for c_step in c_steps:
                     c_step.is_deleted = True
                     c_step.update_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            # Soft delete inference videos for child actions
+            child_inference_videos = session.query(VideoPath).filter(
+                VideoPath.action_id == child_action.id, VideoPath.inference_video == True, VideoPath.is_deleted == False
+            ).all()
+            for civ in child_inference_videos:
+                civ.is_deleted = True
+                civ.update_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
 
     session.commit()
     return {"message": "Action deleted successfully"}
@@ -652,10 +731,7 @@ async def get_dashboard_metrics(admin_doctor_id: int = Query(...), session: Sess
 @router.get("/dashboard/analysis-trends", response_model=List[DataAnalysisDataPoint])
 async def get_analysis_trends(admin_doctor_id: int = Query(...), session: SessionDep = SessionDep):
     authorize_admin(admin_doctor_id, session)
-
-    # Query to get count of actions grouped by month and year of creation_time
-    # Assuming Action.create_time is a string in 'YYYY-MM-DD HH:MM:SS' format
-    # For PostgreSQL, to_timestamp can convert string to timestamp, then to_char for formatting
+    
     query_result = session.query(
         func.to_char(func.to_timestamp(Action.create_time,
                      'YYYY-MM-DD HH24:MI:SS'), 'Mon ''YY'),

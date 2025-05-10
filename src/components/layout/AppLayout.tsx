@@ -1,8 +1,9 @@
+
 'use client';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import React, { useEffect } from 'react';
-import { LayoutDashboard, Users, Stethoscope } from 'lucide-react';
+import { LayoutDashboard, Users, Stethoscope, Video as VideoIcon, ListChecks } from 'lucide-react'; // Added VideoIcon and ListChecks
 import { useAuth } from '@/context/AuthContext';
 import {
   SidebarProvider,
@@ -16,8 +17,6 @@ import {
   SidebarInset,
 } from '@/components/ui/sidebar';
 import { UserNav } from '@/components/layout/UserNav';
-import { Skeleton } from '@/components/ui/skeleton';
-
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -31,7 +30,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }, [currentUser, isLoading, router]);
 
   if (isLoading || !currentUser) {
-    // Show a loading state or a blank page while checking auth / redirecting
     return (
       <div className="flex h-screen w-screen items-center justify-center bg-background">
         <div className="flex flex-col items-center space-y-4">
@@ -45,6 +43,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const navItems = [
     { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/users', label: 'User Management', icon: Users },
+    { href: '/videos', label: 'Video Management', icon: VideoIcon },
+    { href: '/analyses', label: 'Analysis Management', icon: ListChecks },
   ];
 
   return (
@@ -65,9 +65,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                     isActive={pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href))}
                     className="w-full justify-start text-sm font-medium"
                     tooltip={item.label}
-                    // Use sidebar-primary for active state, defined in globals.css
                     variant={pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href)) ? "default" : "ghost"}
-                    // Custom styling for active and hover states to align with CoreUI
                     style={
                       (pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href))) ? 
                       { backgroundColor: 'hsl(var(--sidebar-primary))', color: 'hsl(var(--sidebar-primary-foreground))' } : 

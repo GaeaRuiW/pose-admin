@@ -5,7 +5,7 @@ import type { Patient } from "@/types";
 import { useRouter } from "next/navigation";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { BriefcaseMedical, FilePenLine, Trash2, MoreHorizontal, ArrowUp, ArrowDown, ChevronsUpDown } from "lucide-react";
+import { BriefcaseMedical, FilePenLine, Trash2, MoreHorizontal, ArrowUp, ArrowDown, ChevronsUpDown, Video } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -41,6 +41,10 @@ export function PatientsTable({ patients, onEdit, onDelete, sortConfig, onSort }
     if (doctorId) {
       router.push(`/users?tab=doctors&scrollToDoctorId=${doctorId}`);
     }
+  };
+
+  const handleVideoCountClick = (patientId: string) => {
+    router.push(`/videos?patientId=${patientId}`);
   };
   
   const headers = [
@@ -114,7 +118,16 @@ export function PatientsTable({ patients, onEdit, onDelete, sortConfig, onSort }
                       '-'
                     )}
                   </TableCell>
-                  <TableCell className="text-center text-muted-foreground">{patient.videoCount ?? 'N/A'}</TableCell>
+                  <TableCell className="text-center">
+                     <Button 
+                      variant="link" 
+                      className="p-0 h-auto text-primary hover:underline font-medium" 
+                      onClick={() => handleVideoCountClick(patient.id)}
+                      disabled={patient.videoCount === undefined || patient.videoCount === null}
+                    >
+                      {patient.videoCount ?? 'N/A'} <Video className="ml-1.5 h-4 w-4 inline-block" />
+                    </Button>
+                  </TableCell>
                   <TableCell className="text-center text-muted-foreground">{patient.analysisCount ?? 'N/A'}</TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu>
@@ -143,4 +156,3 @@ export function PatientsTable({ patients, onEdit, onDelete, sortConfig, onSort }
     </TooltipProvider>
   );
 }
-
