@@ -9,9 +9,9 @@ class Doctors(SQLModel, table=True):
     username: str = Field(index=True)
     password: str
     email: str
-    phone: str
-    department: str = Field(default="康复科")
-    role_id: int = Field(default=2) # Default to 2 (Doctor role) instead of 1 (Admin)
+    phone: Optional[str] = Field(default=None, nullable=True)
+    department: Optional[str] = Field(default="康复科", nullable=True)
+    role_id: Optional[int] = Field(default=2, nullable=True) # Default to 2 (Doctor role) instead of 1 (Admin)
     notes: Optional[str] = Field(default=None, nullable=True)
     create_time: str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     update_time: str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")

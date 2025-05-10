@@ -1,8 +1,7 @@
-
 import os
 
 from apis.actions import router as action_router
-# from apis.dashboard import router as dashboard_router # Removed
+from apis.dashboard import router as dashboard_router
 from apis.doctors import router as doctor_router
 from apis.management import router as management_router
 from apis.patients import router as patient_router
@@ -18,12 +17,12 @@ from sqlmodel import Session, create_engine
 app = FastAPI()
 
 app.include_router(action_router, prefix="/api/v1", tags=["actions"])
-# app.include_router(dashboard_router, prefix="/api/v1", tags=["dashboard"]) # Removed
+app.include_router(dashboard_router, prefix="/api/v1", tags=["dashboard"])
 app.include_router(doctor_router, prefix="/api/v1", tags=["doctors"])
 app.include_router(patient_router, prefix="/api/v1", tags=["patients"])
 app.include_router(video_router, prefix="/api/v1", tags=["videos"])
 app.include_router(table_router, prefix="/api/v1", tags=["tables"])
-app.include_router(management_router, prefix="/api/v1", tags=["management"]) # Dashboard routes are now part of this
+app.include_router(management_router, prefix="/api/v1", tags=["management"])
 
 origins = ["*"]
 app.add_middleware(
@@ -68,4 +67,3 @@ async def startup_event():
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("app:app", host="0.0.0.0", port=listen_port, reload=True)
-

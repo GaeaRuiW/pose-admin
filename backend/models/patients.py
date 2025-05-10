@@ -6,10 +6,10 @@ from sqlmodel import Field, SQLModel
 class Patients(SQLModel, table=True):
     id: int = Field(primary_key=True)
     username: str = Field(index=True)
-    age: int
-    gender: str
+    age: Optional[int] = Field(default=None, nullable=True)
+    gender: Optional[str] = Field(default=None, nullable=True)
     case_id: str
-    doctor_id: int
+    doctor_id: Optional[int] = Field(default=None, nullable=True)
     notes: Optional[str] = Field(default=None, nullable=True)
     create_time: str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     update_time: str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
