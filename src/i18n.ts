@@ -308,7 +308,7 @@ const messagesData = {
       showingPatientsForDoctor: "显示 {doctorName}医生的患者。",
       showAllPatients: "显示所有患者",
       loadingUserData": "正在加载用户数据...",
-      errorLoadingData": "加载数据时出错",
+      errorLoadingData: "加载数据时出错",
       confirmDeleteDoctorTitle": "您确定吗？",
       confirmDeleteDoctorDescription": "此操作无法撤销。这将永久删除{doctorName}医生。{reassignMessage}",
       reassignPatientsMessage": "患者将被重新分配给{assignDoctorName}医生。",
@@ -402,7 +402,7 @@ const messagesData = {
     },
     VideosPage: {
       title: "视频管理",
-      searchPlaceholder: "搜索视频...",
+      searchPlaceholder": "搜索视频...",
       showingVideosForPatient": "显示患者 {patientName} (病例号: {caseId}) 的视频。",
       showAllVideos: "显示所有视频",
       loadingVideoData": "正在加载视频数据...",
@@ -455,13 +455,13 @@ const messagesData = {
       originalVideo": "原始视频",
       status: "状态",
       progress: "进度",
-      createdDate: "创建日期",
+      createdDate": "创建日期",
       actions: "操作",
       noAnalysesFound": "未找到分析。",
       viewDetails": "查看详情",
       viewProcessedVideo": "查看处理后视频",
       delete: "删除",
-      openMenu: "打开菜单",
+      openMenu": "打开菜单",
       notApplicable": "不适用"
     },
     ToastMessages: {
@@ -523,3 +523,5 @@ export default getRequestConfig(async ({locale}) => {
   };
 });
 
+
+    
