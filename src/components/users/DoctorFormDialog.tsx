@@ -26,6 +26,8 @@ const permissionToRoleId = {
   'Doctor': 2,
 };
 
+const NO_ROLE_VALUE = "__NO_ROLE__"; // Unique value for "None" option for Role
+
 // Schema factory to handle conditional password requirement
 const createDoctorFormSchema = (isEditing: boolean) => z.object({
   username: z.string().min(1, "Username is required.").min(2, { message: "Username must be at least 2 characters." }),
@@ -62,7 +64,7 @@ export function DoctorFormDialog({ open, onOpenChange, onSubmit, defaultValues }
       password: "", // Always blank for edit, or for new
       phone: defaultValues?.phone || "",
       department: defaultValues?.department || "",
-      role_id: defaultValues?.role_id ?? undefined, // Use undefined for optional select
+      role_id: defaultValues?.role_id ?? null, 
       notes: defaultValues?.notes || "",
     },
   });
@@ -79,26 +81,26 @@ export function DoctorFormDialog({ open, onOpenChange, onSubmit, defaultValues }
     submissionData.notes = data.notes || null;
     
     onSubmit(submissionData);
-    form.reset({ // Reset with structure that matches schema expectations for optional/nullable
+    form.reset({ 
         username: "",
         email: "",
         password: "",
         phone: "",
         department: "",
-        role_id: undefined,
+        role_id: null,
         notes: ""
     });
   };
 
   React.useEffect(() => {
-    if (open) { // Reset form when dialog opens or defaultValues change
+    if (open) { 
         form.reset({
             username: defaultValues?.username || "",
             email: defaultValues?.email || "",
             password: "",
             phone: defaultValues?.phone || "",
             department: defaultValues?.department || "",
-            role_id: defaultValues?.role_id ?? undefined,
+            role_id: defaultValues?.role_id ?? null,
             notes: defaultValues?.notes || "",
         });
     }
@@ -193,9 +195,9 @@ export function DoctorFormDialog({ open, onOpenChange, onSubmit, defaultValues }
                 <FormItem>
                   <FormLabel>Role</FormLabel>
                   <Select 
-                    onValueChange={(value) => field.onChange(value === "" ? null : parseInt(value))} 
-                    value={field.value?.toString() ?? ""}
-                    defaultValue={field.value?.toString() ?? ""}
+                    onValueChange={(value) => field.onChange(value === NO_ROLE_VALUE ? null : parseInt(value))} 
+                    value={field.value === null || field.value === undefined ? NO_ROLE_VALUE : field.value.toString()}
+                    defaultValue={field.value === null || field.value === undefined ? NO_ROLE_VALUE : field.value.toString()}
                   >
                     <FormControl>
                       <SelectTrigger className="bg-background border-input">
@@ -203,7 +205,7 @@ export function DoctorFormDialog({ open, onOpenChange, onSubmit, defaultValues }
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value=""><em>None</em></SelectItem>
+                      <SelectItem value={NO_ROLE_VALUE}><em>None</em></SelectItem>
                       <SelectItem value={String(permissionToRoleId['Admin'])}>Admin</SelectItem>
                       <SelectItem value={String(permissionToRoleId['Doctor'])}>Doctor</SelectItem>
                     </SelectContent>
