@@ -10,6 +10,7 @@ import { Users, FilePenLine, Trash2, MoreHorizontal, ArrowUp, ArrowDown, Chevron
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { useTranslations } from 'next-intl';
 
 interface SortConfig {
   key: string;
@@ -25,12 +26,6 @@ interface DoctorsTableProps {
   onSort: (key: string) => void;
 }
 
-const roleIdToPermissionString = (roleId?: number | null): string => {
-  if (roleId === 1) return 'Admin';
-  if (roleId === 2) return 'Doctor';
-  return 'Unknown'; 
-};
-
 const SortableHeader = ({ children, sortKey, currentSort, onSort }: { children: React.ReactNode, sortKey: string, currentSort: SortConfig | null, onSort: (key: string) => void }) => {
   const isSorted = currentSort?.key === sortKey;
   const Icon = isSorted ? (currentSort.direction === 'ascending' ? ArrowUp : ArrowDown) : ChevronsUpDown;
@@ -42,9 +37,16 @@ const SortableHeader = ({ children, sortKey, currentSort, onSort }: { children: 
   );
 };
 
-
 export function DoctorsTable({ doctors, scrollToDoctorId, onEdit, onDelete, sortConfig, onSort }: DoctorsTableProps) {
+  const t = useTranslations('DoctorsTable');
+  const tForm = useTranslations('DoctorFormDialog'); // For role names
   const router = useRouter();
+
+  const roleIdToPermissionString = (roleId?: number | null): string => {
+    if (roleId === 1) return tForm('roleAdmin');
+    if (roleId === 2) return tForm('roleDoctor');
+    return tForm('roleNone'); 
+  };
   
   const doctorRowRefs = useMemo(() => 
     doctors.reduce<Record<string, React.RefObject<HTMLTableRowElement>>>((acc, doctor) => {
@@ -66,18 +68,18 @@ export function DoctorsTable({ doctors, scrollToDoctorId, onEdit, onDelete, sort
 
 
   const handlePatientCountClick = (doctorId: string) => {
-    router.push(`/users?tab=patients&doctorId=${doctorId}`);
+    router.push(`?tab=patients&doctorId=${doctorId}`); // Use relative path for query param changes
   };
 
   const headers = [
-    { key: 'username', label: 'Username', className: 'w-[180px]' },
-    { key: 'email', label: 'Email', className: 'w-[220px]' },
-    { key: 'phone', label: 'Phone', className: 'w-[150px]' },
-    { key: 'department', label: 'Department', className: 'w-[150px]' },
-    { key: 'patientCount', label: 'Patient Count', className: 'w-[150px] text-center' },
-    { key: 'role_id', label: 'Role', className: 'w-[120px]' },
-    { key: 'notes', label: 'Notes', className: 'min-w-[150px]', sortable: false },
-    { key: 'actions', label: 'Actions', className: 'w-[80px] text-right', sortable: false },
+    { key: 'username', label: t('username'), className: 'w-[180px]' },
+    { key: 'email', label: t('email'), className: 'w-[220px]' },
+    { key: 'phone', label: t('phone'), className: 'w-[150px]' },
+    { key: 'department', label: t('department'), className: 'w-[150px]' },
+    { key: 'patientCount', label: t('patientCount'), className: 'w-[150px] text-center' },
+    { key: 'role_id', label: t('role'), className: 'w-[120px]' },
+    { key: 'notes', label: t('notes'), className: 'min-w-[150px]', sortable: false },
+    { key: 'actions', label: t('actions'), className: 'w-[80px] text-right', sortable: false },
   ];
 
   return (
@@ -103,7 +105,7 @@ export function DoctorsTable({ doctors, scrollToDoctorId, onEdit, onDelete, sort
             {doctors.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={headers.length} className="h-24 text-center text-muted-foreground">
-                  No doctors found.
+                  {t('noDoctorsFound')}
                 </TableCell>
               </TableRow>
             ) : (
@@ -143,16 +145,16 @@ export function DoctorsTable({ doctors, scrollToDoctorId, onEdit, onDelete, sort
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" className="h-8 w-8 p-0">
-                          <span className="sr-only">Open menu</span>
+                          <span className="sr-only">{t('openMenu')}</span>
                           <MoreHorizontal className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem onClick={() => onEdit(doctor)}>
-                          <FilePenLine className="mr-2 h-4 w-4" /> Edit
+                          <FilePenLine className="mr-2 h-4 w-4" /> {t('edit')}
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => onDelete(doctor.id)} className="text-destructive focus:text-destructive focus:bg-destructive/10">
-                          <Trash2 className="mr-2 h-4 w-4" /> Delete
+                          <Trash2 className="mr-2 h-4 w-4" /> {t('delete')}
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -166,4 +168,3 @@ export function DoctorsTable({ doctors, scrollToDoctorId, onEdit, onDelete, sort
     </TooltipProvider>
   );
 }
-

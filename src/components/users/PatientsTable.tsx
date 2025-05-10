@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { BriefcaseMedical, FilePenLine, Trash2, MoreHorizontal, ArrowUp, ArrowDown, ChevronsUpDown, Video } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useTranslations } from 'next-intl';
 
 interface SortConfig {
   key: string;
@@ -35,11 +36,12 @@ const SortableHeader = ({ children, sortKey, currentSort, onSort }: { children: 
 
 
 export function PatientsTable({ patients, onEdit, onDelete, sortConfig, onSort }: PatientsTableProps) {
+  const t = useTranslations('PatientsTable');
   const router = useRouter();
 
   const handleDoctorClick = (doctorId?: string | null) => {
     if (doctorId) {
-      router.push(`/users?tab=doctors&scrollToDoctorId=${doctorId}`);
+      router.push(`?tab=doctors&scrollToDoctorId=${doctorId}`);
     }
   };
 
@@ -48,15 +50,15 @@ export function PatientsTable({ patients, onEdit, onDelete, sortConfig, onSort }
   };
   
   const headers = [
-    { key: 'username', label: 'Name', className: 'w-[180px]' },
-    { key: 'age', label: 'Age', className: 'w-[80px]' },
-    { key: 'gender', label: 'Gender', className: 'w-[100px]' },
-    { key: 'case_id', label: 'Case ID / MRN', className: 'w-[180px]' },
-    { key: 'attendingDoctorName', label: 'Attending Doctor', className: 'w-[200px]' },
-    { key: 'notes', label: 'Notes', className: 'min-w-[150px]', sortable: false },
-    { key: 'videoCount', label: 'Video Count', className: 'w-[130px] text-center' },
-    { key: 'analysisCount', label: 'Analysis Count', className: 'w-[130px] text-center' },
-    { key: 'actions', label: 'Actions', className: 'w-[80px] text-right', sortable: false },
+    { key: 'username', label: t('name'), className: 'w-[180px]' },
+    { key: 'age', label: t('age'), className: 'w-[80px]' },
+    { key: 'gender', label: t('gender'), className: 'w-[100px]' },
+    { key: 'case_id', label: t('caseId'), className: 'w-[180px]' },
+    { key: 'attendingDoctorName', label: t('attendingDoctor'), className: 'w-[200px]' },
+    { key: 'notes', label: t('notes'), className: 'min-w-[150px]', sortable: false },
+    { key: 'videoCount', label: t('videoCount'), className: 'w-[130px] text-center' },
+    { key: 'analysisCount', label: t('analysisCount'), className: 'w-[130px] text-center' },
+    { key: 'actions', label: t('actions'), className: 'w-[80px] text-right', sortable: false },
   ];
 
 
@@ -83,7 +85,7 @@ export function PatientsTable({ patients, onEdit, onDelete, sortConfig, onSort }
             {patients.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={headers.length} className="h-24 text-center text-muted-foreground"> 
-                  No patients found.
+                  {t('noPatientsFound')}
                 </TableCell>
               </TableRow>
             ) : (
@@ -100,7 +102,7 @@ export function PatientsTable({ patients, onEdit, onDelete, sortConfig, onSort }
                       onClick={() => handleDoctorClick(patient.doctor_id)}
                       disabled={!patient.doctor_id || patient.doctor_id === ''}
                     >
-                      {patient.attendingDoctorName || 'N/A'} 
+                      {patient.attendingDoctorName || t('notApplicable')} 
                       {patient.doctor_id && patient.doctor_id !== '' && <BriefcaseMedical className="ml-1.5 h-4 w-4 inline-block" />}
                     </Button>
                   </TableCell>
@@ -125,24 +127,24 @@ export function PatientsTable({ patients, onEdit, onDelete, sortConfig, onSort }
                       onClick={() => handleVideoCountClick(patient.id)}
                       disabled={patient.videoCount === undefined || patient.videoCount === null}
                     >
-                      {patient.videoCount ?? 'N/A'} <Video className="ml-1.5 h-4 w-4 inline-block" />
+                      {patient.videoCount ?? t('notApplicable')} <Video className="ml-1.5 h-4 w-4 inline-block" />
                     </Button>
                   </TableCell>
-                  <TableCell className="text-center text-muted-foreground">{patient.analysisCount ?? 'N/A'}</TableCell>
+                  <TableCell className="text-center text-muted-foreground">{patient.analysisCount ?? t('notApplicable')}</TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" className="h-8 w-8 p-0">
-                            <span className="sr-only">Open menu</span>
+                            <span className="sr-only">{t('openMenu')}</span>
                             <MoreHorizontal className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem onClick={() => onEdit(patient)}>
-                            <FilePenLine className="mr-2 h-4 w-4" /> Edit
+                            <FilePenLine className="mr-2 h-4 w-4" /> {t('edit')}
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => onDelete(patient.id)} className="text-destructive focus:text-destructive focus:bg-destructive/10">
-                            <Trash2 className="mr-2 h-4 w-4" /> Delete
+                            <Trash2 className="mr-2 h-4 w-4" /> {t('delete')}
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>

@@ -4,6 +4,7 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { X } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 interface VideoPlayerModalProps {
   isOpen: boolean;
@@ -13,17 +14,18 @@ interface VideoPlayerModalProps {
 }
 
 export function VideoPlayerModal({ isOpen, onOpenChange, videoUrl, videoTitle }: VideoPlayerModalProps) {
+  const t = useTranslations('VideoPlayerModal');
   if (!videoUrl) return null;
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[800px] p-0 bg-black border-border shadow-2xl rounded-lg overflow-hidden">
         <DialogHeader className="p-4 bg-background/10 flex flex-row justify-between items-center">
-          <DialogTitle className="text-primary-foreground">{videoTitle || 'Video Player'}</DialogTitle>
+          <DialogTitle className="text-primary-foreground">{videoTitle || t('title')}</DialogTitle>
           <DialogClose asChild>
             <Button variant="ghost" size="icon" className="text-primary-foreground hover:bg-background/20">
               <X className="h-5 w-5" />
-              <span className="sr-only">Close</span>
+              <span className="sr-only">{t('close')}</span>
             </Button>
           </DialogClose>
         </DialogHeader>

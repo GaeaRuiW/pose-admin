@@ -3,29 +3,32 @@
 "use client";
 
 import React, { useEffect, useState, Suspense } from 'react';
-import type { DashboardMetrics, DataAnalysisDataPoint } from "@/lib/mockData"; // Re-using existing types for now
+import type { DashboardMetrics, DataAnalysisDataPoint } from "@/types";
 import { MetricsCard } from "@/components/dashboard/MetricsCard";
 import { DataAnalysisChart } from "@/components/dashboard/DataAnalysisChart";
 import { BriefcaseMedical, Users, Video, BarChart3, AlertCircle } from "lucide-react";
 import AppLayout from "@/components/layout/AppLayout";
 import { useAuth } from '@/context/AuthContext';
-import { useToast } from '@/hooks/use-toast';
+import { useToast as useShadcnToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
+import { useTranslations } from 'next-intl';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
 function DashboardContent() {
+  const t = useTranslations('DashboardPage');
+  const tToast = useTranslations('ToastMessages');
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
   const [chartData, setChartData] = useState<DataAnalysisDataPoint[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { currentUser } = useAuth();
-  const { toast } = useToast();
+  const { toast } = useShadcnToast();
 
   const fetchData = async () => {
     if (!currentUser?.id) {
-      setError("User not authenticated.");
+      setError("User not authenticated."); // This should ideally be handled by AuthContext redirect
       setIsLoading(false);
       return;
     }
@@ -39,24 +42,25 @@ function DashboardContent() {
 
       if (!metricsResponse.ok) {
         const errData = await metricsResponse.json();
-        throw new Error(`Failed to fetch metrics: ${metricsResponse.status} ${errData.detail || metricsResponse.statusText}`);
+        throw new Error(errData.detail || `Failed to fetch metrics: ${metricsResponse.statusText}`);
       }
       const metricsData: DashboardMetrics = await metricsResponse.json();
       setMetrics(metricsData);
 
       if (!chartResponse.ok) {
         const errData = await chartResponse.json();
-        throw new Error(`Failed to fetch chart data: ${chartResponse.status} ${errData.detail || chartResponse.statusText}`);
+        throw new Error(errData.detail || `Failed to fetch chart data: ${chartResponse.statusText}`);
       }
       const chartDataFromServer: DataAnalysisDataPoint[] = await chartResponse.json();
       setChartData(chartDataFromServer);
 
     } catch (e) {
       console.error("Dashboard fetch error:", e);
-      setError((e as Error).message);
+      const errorMessage = (e as Error).message;
+      setError(errorMessage);
       toast({
-        title: "Error Fetching Dashboard Data",
-        description: (e as Error).message,
+        title: tToast('fetchDashboardError'),
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -66,13 +70,14 @@ function DashboardContent() {
 
   useEffect(() => {
     fetchData();
-  }, [currentUser?.id]);
+  }, [currentUser?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  // fetchData is memoized by useCallback in newer patterns, but direct call here is fine for now.
 
 
   if (isLoading) {
     return (
       <div className="flex flex-col gap-6">
-        <h1 className="text-3xl font-bold tracking-tight text-foreground">Dashboard</h1>
+        <h1 className="text-3xl font-bold tracking-tight text-foreground">{t('title')}</h1>
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
           {[...Array(4)].map((_, i) => (
             <CardSkeleton key={i} />
@@ -87,9 +92,9 @@ function DashboardContent() {
     return (
       <div className="flex flex-col items-center justify-center h-full gap-4 text-destructive p-6 rounded-lg border border-destructive/50 bg-destructive/10">
         <AlertCircle className="w-16 h-16" />
-        <h2 className="text-2xl font-semibold">Error Loading Dashboard</h2>
+        <h2 className="text-2xl font-semibold">{t('errorLoading')}</h2>
         <p className="text-center max-w-md">{error}</p>
-        <Button onClick={fetchData} variant="destructive">Retry</Button>
+        <Button onClick={fetchData} variant="destructive">{t('retry')}</Button>
       </div>
     );
   }
@@ -97,45 +102,45 @@ function DashboardContent() {
   if (!metrics) {
     return (
       <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
-        <p>No dashboard data available.</p>
+        <p>{t('noData')}</p>
       </div>
     );
   }
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="text-3xl font-bold tracking-tight text-foreground">Dashboard</h1>
+      <h1 className="text-3xl font-bold tracking-tight text-foreground">{t('title')}</h1>
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         <MetricsCard
-          title="Total Doctors"
+          title={t('totalDoctors')}
           value={metrics.doctorCount}
           icon={BriefcaseMedical}
-          description="Number of active doctors"
+          description={t('totalDoctorsDesc')}
         />
         <MetricsCard
-          title="Total Patients"
+          title={t('totalPatients')}
           value={metrics.patientCount}
           icon={Users}
-          description="Registered patients in system"
+          description={t('totalPatientsDesc')}
         />
         <MetricsCard
-          title="Uploaded Videos"
+          title={t('uploadedVideos')}
           value={metrics.videoCount}
           icon={Video}
-          description="Consultation videos"
+          description={t('uploadedVideosDesc')}
         />
         <MetricsCard
-          title="Data Analyses"
+          title={t('dataAnalyses')}
           value={metrics.dataAnalysisCount}
           icon={BarChart3}
-          description="Analyses performed"
+          description={t('dataAnalysesDesc')}
         />
       </div>
       {chartData.length > 0 ? (
         <DataAnalysisChart data={chartData} />
       ) : (
         <div className="p-4 text-center text-muted-foreground bg-card rounded-lg shadow-md h-[350px] flex items-center justify-center">
-          No analysis trend data available.
+          {t('noTrendData')}
         </div>
       )}
     </div>
@@ -150,19 +155,23 @@ const CardSkeleton = () => (
   </div>
 );
 
-const ChartSkeleton = () => (
-  <div className="p-4 bg-card rounded-lg shadow-md">
-    <Skeleton className="h-5 w-1/3 mb-2" />
-    <Skeleton className="h-4 w-1/2 mb-4" />
-    <Skeleton className="h-[300px] w-full" />
-  </div>
-);
+const ChartSkeleton = () => {
+  const t = useTranslations('DashboardPage');
+  return (
+    <div className="p-4 bg-card rounded-lg shadow-md">
+      <Skeleton className="h-5 w-1/3 mb-2" />
+      <Skeleton className="h-4 w-1/2 mb-4" />
+      <Skeleton className="h-[300px] w-full" />
+    </div>
+  );
+};
 
 
 export default function DashboardPage() {
+  const t = useTranslations('DashboardPage');
   return (
     <AppLayout>
-      <Suspense fallback={<div className="flex justify-center items-center h-64 text-muted-foreground">Loading dashboard...</div>}>
+      <Suspense fallback={<div className="flex justify-center items-center h-64 text-muted-foreground">{t('loading')}</div>}>
         <DashboardContent />
       </Suspense>
     </AppLayout>

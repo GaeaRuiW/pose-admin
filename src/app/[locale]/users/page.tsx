@@ -3,8 +3,9 @@
 "use client";
 
 import React, { useEffect, useMemo, useState, Suspense, useCallback } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
-import type { Doctor, Patient } from '@/types'; // Use updated types
+import { useSearchParams } from 'next/navigation'; // Use from next/navigation
+import { useRouter } from 'next/navigation'; // Use from next/navigation
+import type { Doctor, Patient } from '@/types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DoctorsTable } from '@/components/users/DoctorsTable';
 import { PatientsTable } from '@/components/users/PatientsTable';
@@ -14,10 +15,11 @@ import { Button } from '@/components/ui/button';
 import { DoctorFormDialog, DoctorFormData } from '@/components/users/DoctorFormDialog';
 import { PatientFormDialog, PatientFormData } from '@/components/users/PatientFormDialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { useToast } from "@/hooks/use-toast";
+import { useToast as useShadcnToast } from "@/hooks/use-toast";
 import AppLayout from "@/components/layout/AppLayout";
-import { useAuth } from '@/context/AuthContext'; // For admin_doctor_id
+import { useAuth } from '@/context/AuthContext';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useTranslations } from 'next-intl';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
@@ -27,22 +29,19 @@ interface SortConfig {
   direction: SortDirection;
 }
 
-// Mapping frontend permission strings to backend role_id
 const permissionToRoleId = {
   'Admin': 1,
   'Doctor': 2,
 };
-const roleIdToPermissionString = (roleId?: number | null): string => {
-  if (roleId === 1) return 'Admin';
-  if (roleId === 2) return 'Doctor';
-  return 'Unknown';
-};
-
 
 function UserManagementContent() {
+  const t = useTranslations('UserManagementPage');
+  const tCommon = useTranslations('Common');
+  const tToast = useTranslations('ToastMessages');
+
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { toast } = useToast();
+  const { toast } = useShadcnToast();
   const { currentUser } = useAuth(); 
   
   const activeTab = searchParams.get('tab') || 'doctors';
@@ -69,38 +68,45 @@ function UserManagementContent() {
   const [sortConfigDoctors, setSortConfigDoctors] = useState<SortConfig | null>(null);
   const [sortConfigPatients, setSortConfigPatients] = useState<SortConfig | null>(null);
 
-
   const fetchDoctors = useCallback(async () => {
     if (!currentUser?.id) return;
     setIsLoading(prev => ({ ...prev, doctors: true }));
     try {
       const response = await fetch(`${API_BASE_URL}/management/doctors?admin_doctor_id=${currentUser.id}`);
-      if (!response.ok) throw new Error(`Failed to fetch doctors: ${response.statusText}`);
+      if (!response.ok) {
+        const errData = await response.json();
+        throw new Error(errData.detail || `Failed to fetch doctors: ${response.statusText}`);
+      }
       const data: Doctor[] = await response.json();
       setDoctors(data.map(d => ({...d, id: String(d.id)}))); 
     } catch (e) {
-      setError((e as Error).message);
-      toast({ title: "Error", description: "Could not fetch doctors.", variant: "destructive" });
+      const errorMessage = (e as Error).message;
+      setError(errorMessage);
+      toast({ title: tToast('error'), description: tToast('fetchDoctorsError'), variant: "destructive" });
     } finally {
       setIsLoading(prev => ({ ...prev, doctors: false }));
     }
-  }, [currentUser?.id, toast]);
+  }, [currentUser?.id, toast, tToast]);
 
   const fetchPatients = useCallback(async () => {
     if (!currentUser?.id) return;
     setIsLoading(prev => ({ ...prev, patients: true }));
     try {
       const response = await fetch(`${API_BASE_URL}/management/patients?admin_doctor_id=${currentUser.id}`);
-      if (!response.ok) throw new Error(`Failed to fetch patients: ${response.statusText}`);
+      if (!response.ok) {
+        const errData = await response.json();
+        throw new Error(errData.detail || `Failed to fetch patients: ${response.statusText}`);
+      }
       const data: Patient[] = await response.json();
       setPatients(data.map(p => ({...p, id: String(p.id), doctor_id: p.doctor_id ? String(p.doctor_id) : null}))); 
     } catch (e) {
-      setError((e as Error).message);
-      toast({ title: "Error", description: "Could not fetch patients.", variant: "destructive" });
+      const errorMessage = (e as Error).message;
+      setError(errorMessage);
+      toast({ title: tToast('error'), description: tToast('fetchPatientsError'), variant: "destructive" });
     } finally {
       setIsLoading(prev => ({ ...prev, patients: false }));
     }
-  }, [currentUser?.id, toast]);
+  }, [currentUser?.id, toast, tToast]);
 
   useEffect(() => {
     fetchDoctors();
@@ -139,13 +145,17 @@ function UserManagementContent() {
       } else if (typeof aValue === 'string' && typeof bValue === 'string') {
         comparison = aValue.toLowerCase().localeCompare(bValue.toLowerCase());
       } else {
-        // Fallback for mixed types or other types
         comparison = String(aValue).toLowerCase().localeCompare(String(bValue).toLowerCase());
       }
       return direction === 'ascending' ? comparison : -comparison;
     });
   };
 
+  const roleIdToPermissionString = (roleId?: number | null): string => {
+    if (roleId === 1) return t('DoctorFormDialog.roleAdmin');
+    if (roleId === 2) return t('DoctorFormDialog.roleDoctor');
+    return t('DoctorFormDialog.roleNone'); 
+  };
 
   const displayedDoctors = useMemo(() => {
     let filteredDoctors = doctors.filter(doctor =>
@@ -153,7 +163,6 @@ function UserManagementContent() {
       (doctor.email?.toLowerCase() || '').includes(searchTermDoctors.toLowerCase()) ||
       (doctor.department?.toLowerCase() || '').includes(searchTermDoctors.toLowerCase())
     );
-
     const doctorKeyAccessor = (doctor: Doctor, key: string) => {
         switch(key) {
             case 'username': return doctor.username;
@@ -166,7 +175,7 @@ function UserManagementContent() {
         }
     }
     return sortData(filteredDoctors, sortConfigDoctors, doctorKeyAccessor);
-  }, [doctors, searchTermDoctors, sortConfigDoctors]);
+  }, [doctors, searchTermDoctors, sortConfigDoctors, t]);
 
 
   const displayedPatients = useMemo(() => {
@@ -194,17 +203,20 @@ function UserManagementContent() {
     return sortData(filtered, sortConfigPatients, patientKeyAccessor);
   }, [patients, filterDoctorIdParam, searchTermPatients, activeTab, sortConfigPatients]);
 
-
   const handleTabChange = (newTabValue: string) => {
-    const newParams = new URLSearchParams(searchParams.toString());
-    newParams.set('tab', newTabValue);
-    if (newTabValue === 'doctors' && !newParams.has('scrollToDoctorId')) newParams.delete('doctorId');
-    if (newTabValue === 'patients') newParams.delete('scrollToDoctorId');
-    router.push(`/users?${newParams.toString()}`, { scroll: false });
+    const currentParams = new URLSearchParams(Array.from(searchParams.entries()));
+    currentParams.set('tab', newTabValue);
+    if (newTabValue === 'doctors' && !currentParams.has('scrollToDoctorId')) {
+        currentParams.delete('doctorId');
+    }
+    if (newTabValue === 'patients') {
+        currentParams.delete('scrollToDoctorId');
+    }
+    router.push(`?${currentParams.toString()}`, { scroll: false });
   };
   
   useEffect(() => {
-    const currentParams = new URLSearchParams(searchParams.toString());
+    const currentParams = new URLSearchParams(Array.from(searchParams.entries()));
     let paramsChanged = false;
     if (activeTab === 'doctors' && filterDoctorIdParam && !scrollToDoctorIdParam) {
       currentParams.delete('doctorId');
@@ -214,8 +226,9 @@ function UserManagementContent() {
       currentParams.delete('scrollToDoctorId');
       paramsChanged = true;
     }
-    if (paramsChanged) router.replace(`/users?${currentParams.toString()}`, { scroll: false });
+    if (paramsChanged) router.replace(`?${currentParams.toString()}`, { scroll: false });
   }, [activeTab, filterDoctorIdParam, scrollToDoctorIdParam, searchParams, router]);
+
 
   const doctorForFilteredPatients = useMemo(() => {
     if (activeTab === 'patients' && filterDoctorIdParam) {
@@ -224,7 +237,6 @@ function UserManagementContent() {
     return null;
   }, [activeTab, filterDoctorIdParam, doctors]);
 
-  // Doctor CRUD
   const handleAddDoctor = () => {
     setEditingDoctor(null);
     setIsDoctorModalOpen(true);
@@ -241,13 +253,13 @@ function UserManagementContent() {
     
     try {
       let response;
-      if (editingDoctor) { // Update
+      if (editingDoctor) {
         response = await fetch(`${API_BASE_URL}/management/doctor`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ ...payload, doctor_id: parseInt(editingDoctor.id) }),
         });
-      } else { // Create
+      } else {
         response = await fetch(`${API_BASE_URL}/management/doctor`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -257,12 +269,15 @@ function UserManagementContent() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.detail || `Failed to save doctor: ${response.statusText}`);
+        throw new Error(errorData.detail || tToast('saveDoctorError', {statusText: response.statusText}));
       }
-      toast({ title: editingDoctor ? "Doctor Updated" : "Doctor Added", description: `${data.username} has been saved successfully.` });
+      toast({ 
+        title: editingDoctor ? tToast('doctorUpdatedTitle') : tToast('doctorAddedTitle'), 
+        description: tToast('doctorSaveSuccessDesc', {doctorName: data.username}) 
+      });
       fetchDoctors(); 
     } catch (e) {
-      toast({ title: "Error", description: (e as Error).message, variant: "destructive" });
+      toast({ title: tToast('error'), description: (e as Error).message, variant: "destructive" });
     }
     setIsDoctorModalOpen(false);
   };
@@ -274,7 +289,7 @@ function UserManagementContent() {
     if (doctorToDelete.patientCount && doctorToDelete.patientCount > 0) {
         const otherDoctors = doctors.filter(d => d.id !== doctorId);
         if (otherDoctors.length === 0) {
-            toast({ title: "Cannot Delete Doctor", description: "This doctor has patients and there are no other doctors to reassign them to.", variant: "destructive"});
+            toast({ title: t('cannotDeleteDoctor'), description: t('noOtherDoctorToReassign'), variant: "destructive"});
             return;
         }
         setAssignDoctorIdForDeletion(otherDoctors[0].id); 
@@ -304,19 +319,18 @@ function UserManagementContent() {
       });
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.detail || `Failed to delete doctor: ${response.statusText}`);
+        throw new Error(errorData.detail || tToast('deleteDoctorError', {statusText: response.statusText}));
       }
-      toast({ title: "Doctor Deleted", description: `Doctor has been deleted.`, variant: "destructive"});
+      toast({ title: tToast('doctorDeletedTitle'), description: tToast('doctorDeletedDesc'), variant: "destructive"});
       fetchDoctors(); 
       fetchPatients(); 
     } catch (e) {
-      toast({ title: "Error", description: (e as Error).message, variant: "destructive" });
+      toast({ title: tToast('error'), description: (e as Error).message, variant: "destructive" });
     }
     setDeletingDoctorId(null);
     setAssignDoctorIdForDeletion(null);
   };
 
-  // Patient CRUD
   const handleAddPatient = () => {
     setEditingPatient(null);
     setIsPatientModalOpen(true);
@@ -337,13 +351,13 @@ function UserManagementContent() {
     
     try {
       let response;
-      if (editingPatient) { // Update
+      if (editingPatient) {
         response = await fetch(`${API_BASE_URL}/management/patient`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ ...payload, patient_id: parseInt(editingPatient.id) }),
         });
-      } else { // Create
+      } else {
         response = await fetch(`${API_BASE_URL}/management/patient`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -352,13 +366,16 @@ function UserManagementContent() {
       }
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.detail || `Failed to save patient: ${response.statusText}`);
+        throw new Error(errorData.detail || tToast('savePatientError', {statusText: response.statusText}));
       }
-      toast({ title: editingPatient ? "Patient Updated" : "Patient Added", description: `${data.username} has been saved successfully.` });
+      toast({ 
+        title: editingPatient ? tToast('patientUpdatedTitle') : tToast('patientAddedTitle'), 
+        description: tToast('patientSaveSuccessDesc', {patientName: data.username})
+      });
       fetchPatients(); 
       fetchDoctors(); 
     } catch (e) {
-      toast({ title: "Error", description: (e as Error).message, variant: "destructive" });
+      toast({ title: tToast('error'), description: (e as Error).message, variant: "destructive" });
     }
     setIsPatientModalOpen(false);
   };
@@ -380,21 +397,22 @@ function UserManagementContent() {
       });
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.detail || `Failed to delete patient: ${response.statusText}`);
+        throw new Error(errorData.detail || tToast('deletePatientError', {statusText: response.statusText}));
       }
-      toast({ title: "Patient Deleted", description: `Patient has been deleted.`, variant: "destructive" });
+      toast({ title: tToast('patientDeletedTitle'), description: tToast('patientDeletedDesc'), variant: "destructive" });
       fetchPatients(); 
       fetchDoctors(); 
     } catch (e) {
-      toast({ title: "Error", description: (e as Error).message, variant: "destructive" });
+      toast({ title: tToast('error'), description: (e as Error).message, variant: "destructive" });
     }
     setDeletingPatientId(null);
   };
 
+
   if (isLoading.doctors || isLoading.patients && !error) {
     return (
       <div className="flex flex-col gap-6">
-        <h1 className="text-3xl font-bold tracking-tight text-foreground">User Management</h1>
+        <h1 className="text-3xl font-bold tracking-tight text-foreground">{t('title')}</h1>
         <Skeleton className="h-10 w-1/4" /> 
         <div className="space-y-4">
           <Skeleton className="h-12 w-full" /> 
@@ -408,21 +426,25 @@ function UserManagementContent() {
     return (
       <div className="flex flex-col items-center justify-center h-full gap-4 text-destructive">
         <AlertCircle className="w-16 h-16" />
-        <h2 className="text-2xl font-semibold">Error Loading Data</h2>
+        <h2 className="text-2xl font-semibold">{t('errorLoadingData')}</h2>
         <p className="text-center">{error}</p>
-        <Button onClick={() => { fetchDoctors(); fetchPatients(); setError(null); }}>Retry</Button>
+        <Button onClick={() => { fetchDoctors(); fetchPatients(); setError(null); }}>{tCommon('retry')}</Button>
       </div>
     )
   }
+  
+  const doctorToDelete = doctors.find(d => d.id === deletingDoctorId);
+  const patientToDelete = patients.find(p => p.id === deletingPatientId);
+  const assignDoctorForReassignment = doctors.find(d => d.id === assignDoctorIdForDeletion);
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="text-3xl font-bold tracking-tight text-foreground">User Management</h1>
+      <h1 className="text-3xl font-bold tracking-tight text-foreground">{t('title')}</h1>
       <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
           <TabsList className="bg-muted p-1 rounded-lg">
-            <TabsTrigger value="doctors" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Doctors</TabsTrigger>
-            <TabsTrigger value="patients" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Patients</TabsTrigger>
+            <TabsTrigger value="doctors" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">{t('doctorsTab')}</TabsTrigger>
+            <TabsTrigger value="patients" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">{t('patientsTab')}</TabsTrigger>
           </TabsList>
           
           <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
@@ -432,14 +454,14 @@ function UserManagementContent() {
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
                     type="search"
-                    placeholder="Search doctors..."
+                    placeholder={t('searchDoctorsPlaceholder')}
                     className="pl-10 h-10 bg-card border-border focus:ring-primary"
                     value={searchTermDoctors}
                     onChange={(e) => setSearchTermDoctors(e.target.value)}
                   />
                 </div>
                 <Button onClick={handleAddDoctor} className="w-full sm:w-auto">
-                  <PlusCircle className="mr-2 h-4 w-4" /> Add Doctor
+                  <PlusCircle className="mr-2 h-4 w-4" /> {t('addDoctorButton')}
                 </Button>
               </>
             )}
@@ -449,14 +471,14 @@ function UserManagementContent() {
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
                     type="search"
-                    placeholder="Search patients..."
+                    placeholder={t('searchPatientsPlaceholder')}
                     className="pl-10 h-10 bg-card border-border focus:ring-primary"
                     value={searchTermPatients}
                     onChange={(e) => setSearchTermPatients(e.target.value)}
                   />
                 </div>
                 <Button onClick={handleAddPatient} className="w-full sm:w-auto">
-                  <PlusCircle className="mr-2 h-4 w-4" /> Add Patient
+                  <PlusCircle className="mr-2 h-4 w-4" /> {t('addPatientButton')}
                 </Button>
               </>
             )}
@@ -466,15 +488,15 @@ function UserManagementContent() {
         {activeTab === 'patients' && doctorForFilteredPatients && (
           <div className="mb-4 p-3 bg-primary/10 border border-primary/20 rounded-md flex justify-between items-center">
             <p className="text-sm text-primary font-medium">
-              Showing patients for Dr. {doctorForFilteredPatients.username}.
+              {t('showingPatientsForDoctor', {doctorName: doctorForFilteredPatients.username})}
             </p>
             <Button 
               variant="ghost" 
               size="sm"
               className="text-primary hover:bg-primary/20"
-              onClick={() => router.push('/users?tab=patients')}
+              onClick={() => router.push('?tab=patients')}
             >
-              Show All Patients
+              {t('showAllPatients')}
             </Button>
           </div>
         )}
@@ -522,15 +544,19 @@ function UserManagementContent() {
       <AlertDialog open={!!deletingDoctorId} onOpenChange={(open) => !open && setDeletingDoctorId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogTitle>{t('confirmDeleteDoctorTitle')}</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete Dr. {doctors.find(d => d.id === deletingDoctorId)?.username}. 
-              {doctors.find(d => d.id === deletingDoctorId)?.patientCount ?? 0 > 0 ? ` Patients will be reassigned to Dr. ${doctors.find(d => d.id === assignDoctorIdForDeletion)?.username || 'another doctor'}.` : ''}
+              {t('confirmDeleteDoctorDescription', {
+                doctorName: doctorToDelete?.username || '',
+                reassignMessage: (doctorToDelete?.patientCount ?? 0) > 0 
+                  ? t('reassignPatientsMessage', {assignDoctorName: assignDoctorForReassignment?.username || 'another doctor'})
+                  : ''
+              })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setDeletingDoctorId(null)}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDeleteDoctor} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
+            <AlertDialogCancel onClick={() => setDeletingDoctorId(null)}>{tCommon('cancel')}</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteDoctor} className="bg-destructive hover:bg-destructive/90">{tCommon('delete')}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -538,29 +564,28 @@ function UserManagementContent() {
       <AlertDialog open={!!deletingPatientId} onOpenChange={(open) => !open && setDeletingPatientId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogTitle>{t('confirmDeletePatientTitle')}</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete patient {patients.find(p => p.id === deletingPatientId)?.username}.
+              {t('confirmDeletePatientDescription', {patientName: patientToDelete?.username || ''})}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setDeletingPatientId(null)}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDeletePatient} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
+            <AlertDialogCancel onClick={() => setDeletingPatientId(null)}>{tCommon('cancel')}</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeletePatient} className="bg-destructive hover:bg-destructive/90">{tCommon('delete')}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
     </div>
   );
 }
 
 export default function UserManagementPage() {
+  const t = useTranslations('UserManagementPage');
   return (
     <AppLayout>
-      <Suspense fallback={<div className="flex justify-center items-center h-64 text-muted-foreground">Loading user data...</div>}>
+      <Suspense fallback={<div className="flex justify-center items-center h-64 text-muted-foreground">{t('loadingUserData')}</div>}>
         <UserManagementContent />
       </Suspense>
     </AppLayout>
   );
 }
-

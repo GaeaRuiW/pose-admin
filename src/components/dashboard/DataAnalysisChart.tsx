@@ -1,3 +1,4 @@
+
 "use client";
 import type { DataAnalysisDataPoint } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -10,24 +11,19 @@ import {
 } from "@/components/ui/chart";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, TooltipProps } from "recharts";
 import { NameType, ValueType } from 'recharts/types/component/DefaultTooltipContent';
+import { useTranslations } from 'next-intl';
 
 interface DataAnalysisChartProps {
   data: DataAnalysisDataPoint[];
 }
 
-const chartConfig = {
-  analyses: {
-    label: "Analyses",
-    color: "hsl(var(--primary))",
-  },
-};
-
 const CustomTooltip = ({ active, payload, label }: TooltipProps<ValueType, NameType>) => {
+  const t = useTranslations('DashboardPage');
   if (active && payload && payload.length) {
     return (
       <div className="p-2 bg-background border border-border rounded-md shadow-lg">
         <p className="label text-sm font-medium">{`${label}`}</p>
-        <p className="intro text-sm text-primary">{`Analyses : ${payload[0].value}`}</p>
+        <p className="intro text-sm text-primary">{`${t('dataAnalyses')} : ${payload[0].value}`}</p>
       </div>
     );
   }
@@ -36,11 +32,20 @@ const CustomTooltip = ({ active, payload, label }: TooltipProps<ValueType, NameT
 
 
 export function DataAnalysisChart({ data }: DataAnalysisChartProps) {
+  const t = useTranslations('DashboardPage');
+
+  const chartConfig = {
+    analyses: {
+      label: t('dataAnalyses'),
+      color: "hsl(var(--primary))",
+    },
+  };
+
   return (
     <Card className="shadow-lg rounded-lg overflow-hidden col-span-1 md:col-span-2 lg:col-span-4">
       <CardHeader>
-        <CardTitle className="text-lg font-semibold text-card-foreground">Data Analysis Trends</CardTitle>
-        <CardDescription className="text-sm text-muted-foreground">Number of data analyses per day over the last few months.</CardDescription>
+        <CardTitle className="text-lg font-semibold text-card-foreground">{t('analysisTrendsTitle')}</CardTitle>
+        <CardDescription className="text-sm text-muted-foreground">{t('analysisTrendsDesc')}</CardDescription>
       </CardHeader>
       <CardContent className="h-[350px] w-full p-4">
         <ChartContainer config={chartConfig} className="h-full w-full">

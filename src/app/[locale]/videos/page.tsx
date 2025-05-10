@@ -6,15 +6,16 @@ import React, { useEffect, useMemo, useState, Suspense, useCallback } from 'reac
 import { useSearchParams, useRouter } from 'next/navigation';
 import type { Video, Patient } from '@/types';
 import { VideosTable } from '@/components/videos/VideosTable';
-import { VideoPlayerModal } from '@/components/videos/VideoPlayerModal'; // Import the modal
+import { VideoPlayerModal } from '@/components/videos/VideoPlayerModal';
 import { Input } from '@/components/ui/input';
 import { Search, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { useToast } from "@/hooks/use-toast";
+import { useToast as useShadcnToast } from "@/hooks/use-toast";
 import AppLayout from "@/components/layout/AppLayout";
 import { useAuth } from '@/context/AuthContext';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useTranslations } from 'next-intl';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
@@ -25,13 +26,18 @@ interface SortConfig {
 }
 
 function VideoManagementContent() {
+  const t = useTranslations('VideosPage');
+  const tCommon = useTranslations('Common');
+  const tToast = useTranslations('ToastMessages');
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { toast } = useToast();
+  const { toast } = useShadcnToast();
   const { currentUser } = useAuth(); 
   
   const filterPatientIdParam = searchParams.get('patientId');
-  const filterVideoIdParam = searchParams.get('videoId'); // For potential deep linking to a specific video
+  const filterVideoIdParam = searchParams.get('videoId'); 
+  const playInferenceParam = searchParams.get('playInference');
+
 
   const [videos, setVideos] = useState<Video[]>([]);
   const [patients, setPatients] = useState<Patient[]>([]); 
@@ -45,7 +51,6 @@ function VideoManagementContent() {
   const [currentVideoUrl, setCurrentVideoUrl] = useState<string | null>(null);
   const [currentVideoTitle, setCurrentVideoTitle] = useState<string | undefined>(undefined);
 
-
   const fetchVideosAndPatients = useCallback(async () => {
     if (!currentUser?.id) return;
     setIsLoading(true);
@@ -58,33 +63,42 @@ function VideoManagementContent() {
 
       if (!videosResponse.ok) {
         const errData = await videosResponse.json();
-        throw new Error(`Failed to fetch videos: ${videosResponse.status} ${errData.detail || videosResponse.statusText}`);
+        throw new Error(errData.detail || `Failed to fetch videos: ${videosResponse.statusText}`);
       }
-      const videosData: Video[] = await videosResponse.json();
-      setVideos(videosData.map(v => ({...v, id: String(v.id), patient_id: String(v.patient_id), action_id: v.action_id ? String(v.action_id) : null })));
+      let videosData: Video[] = await videosResponse.json();
+      videosData = videosData.map(v => ({...v, id: String(v.id), patient_id: String(v.patient_id), action_id: v.action_id ? String(v.action_id) : null }));
+      setVideos(videosData);
       
       if (!patientsResponse.ok) {
         const errData = await patientsResponse.json();
-        throw new Error(`Failed to fetch patients: ${patientsResponse.status} ${errData.detail || patientsResponse.statusText}`);
+        throw new Error(errData.detail || `Failed to fetch patients: ${patientsResponse.statusText}`);
       }
       const patientsData: Patient[] = await patientsResponse.json();
       setPatients(patientsData.map(p => ({...p, id: String(p.id)})));
 
       if (filterVideoIdParam) {
-        const videoToPlay = videosData.find(v => String(v.id) === filterVideoIdParam);
+        let videoToPlay = videosData.find(v => String(v.id) === filterVideoIdParam && (v.original_video || !playInferenceParam));
+
+        if (playInferenceParam === 'true' && videoToPlay?.action_id) {
+            // Try to find the inference video associated with this original video's action
+            const inferenceVideoForAction = videosData.find(v => v.action_id === videoToPlay.action_id && v.inference_video);
+            if (inferenceVideoForAction) {
+                videoToPlay = inferenceVideoForAction;
+            }
+        }
         if (videoToPlay) {
             handlePlayVideo(videoToPlay);
         }
       }
 
-
     } catch (e) {
-      setError((e as Error).message);
-      toast({ title: "Error", description: (e as Error).message, variant: "destructive" });
+      const errorMessage = (e as Error).message;
+      setError(errorMessage);
+      toast({ title: tToast('error'), description: tToast('fetchVideosError'), variant: "destructive" });
     } finally {
       setIsLoading(false);
     }
-  }, [currentUser?.id, toast, filterVideoIdParam]);
+  }, [currentUser?.id, toast, tToast, filterVideoIdParam, playInferenceParam]); // Added playInferenceParam
 
   useEffect(() => {
     fetchVideosAndPatients();
@@ -173,12 +187,12 @@ function VideoManagementContent() {
       });
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.detail || `Failed to delete video: ${response.statusText}`);
+        throw new Error(errorData.detail || tToast('deleteVideoError', {statusText: response.statusText}));
       }
-      toast({ title: "Video Deleted", description: `Video has been deleted.`, variant: "destructive" });
+      toast({ title: t('videoDeletedToast'), description: t('videoDeletedDesc'), variant: "destructive" });
       fetchVideosAndPatients(); 
     } catch (e) {
-      toast({ title: "Error", description: (e as Error).message, variant: "destructive" });
+      toast({ title: tToast('error'), description: (e as Error).message, variant: "destructive" });
     }
     setDeletingVideoId(null);
   };
@@ -195,7 +209,7 @@ function VideoManagementContent() {
   if (isLoading && !error) {
     return (
       <div className="flex flex-col gap-6">
-        <h1 className="text-3xl font-bold tracking-tight text-foreground">Video Management</h1>
+        <h1 className="text-3xl font-bold tracking-tight text-foreground">{t('title')}</h1>
         <Skeleton className="h-10 w-1/3 mb-4" /> 
         <div className="space-y-4">
           <Skeleton className="h-12 w-full" /> 
@@ -209,23 +223,23 @@ function VideoManagementContent() {
     return (
       <div className="flex flex-col items-center justify-center h-full gap-4 text-destructive">
         <AlertCircle className="w-16 h-16" />
-        <h2 className="text-2xl font-semibold">Error Loading Videos</h2>
+        <h2 className="text-2xl font-semibold">{t('errorLoadingVideos')}</h2>
         <p className="text-center">{error}</p>
-        <Button onClick={() => { fetchVideosAndPatients(); }}>Retry</Button>
+        <Button onClick={() => { fetchVideosAndPatients(); }}>{tCommon('retry')}</Button>
       </div>
     )
   }
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="text-3xl font-bold tracking-tight text-foreground">Video Management</h1>
+      <h1 className="text-3xl font-bold tracking-tight text-foreground">{t('title')}</h1>
       
       <div className="flex justify-between items-center mb-2">
           <div className="relative w-full sm:w-auto sm:max-w-xs">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               type="search"
-              placeholder="Search videos..."
+              placeholder={t('searchPlaceholder')}
               className="pl-10 h-10 bg-card border-border focus:ring-primary"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -236,7 +250,7 @@ function VideoManagementContent() {
       {filterPatientIdParam && patientForFilteredVideos && (
         <div className="mb-4 p-3 bg-primary/10 border border-primary/20 rounded-md flex justify-between items-center">
           <p className="text-sm text-primary font-medium">
-            Showing videos for patient: {patientForFilteredVideos.username} (Case ID: {patientForFilteredVideos.case_id}).
+            {t('showingVideosForPatient', {patientName: patientForFilteredVideos.username, caseId: patientForFilteredVideos.case_id})}
           </p>
           <Button 
             variant="ghost" 
@@ -244,7 +258,7 @@ function VideoManagementContent() {
             className="text-primary hover:bg-primary/20"
             onClick={() => router.push('/videos')}
           >
-            Show All Videos
+            {t('showAllVideos')}
           </Button>
         </div>
       )}
@@ -261,14 +275,14 @@ function VideoManagementContent() {
       <AlertDialog open={!!deletingVideoId} onOpenChange={(open) => !open && setDeletingVideoId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogTitle>{t('confirmDeleteVideoTitle')}</AlertDialogTitle>
             <AlertDialogDescription>
-              This action will mark the video as deleted. Associated analyses might also be affected.
+              {t('confirmDeleteVideoDescription')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setDeletingVideoId(null)}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDeleteVideo} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
+            <AlertDialogCancel onClick={() => setDeletingVideoId(null)}>{tCommon('cancel')}</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteVideo} className="bg-destructive hover:bg-destructive/90">{tCommon('delete')}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -284,9 +298,10 @@ function VideoManagementContent() {
 }
 
 export default function VideoManagementPage() {
+  const t = useTranslations('VideosPage');
   return (
     <AppLayout>
-      <Suspense fallback={<div className="flex justify-center items-center h-64 text-muted-foreground">Loading video data...</div>}>
+      <Suspense fallback={<div className="flex justify-center items-center h-64 text-muted-foreground">{t('loadingVideoData')}</div>}>
         <VideoManagementContent />
       </Suspense>
     </AppLayout>

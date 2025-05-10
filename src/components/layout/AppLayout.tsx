@@ -1,9 +1,9 @@
 
 'use client';
-import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import Link from 'next/link'; // Using next/link, middleware handles locale
+import { usePathname, useRouter } from 'next/navigation'; // Using next/navigation, middleware handles locale
 import React, { useEffect } from 'react';
-import { LayoutDashboard, Users, Stethoscope, Video as VideoIcon, ListChecks } from 'lucide-react'; // Added VideoIcon and ListChecks
+import { LayoutDashboard, Users, Stethoscope, Video as VideoIcon, ListChecks } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import {
   SidebarProvider,
@@ -17,15 +17,17 @@ import {
   SidebarInset,
 } from '@/components/ui/sidebar';
 import { UserNav } from '@/components/layout/UserNav';
+import { useTranslations } from 'next-intl';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname();
-  const { currentUser, isLoading, logout } = useAuth();
+  const t = useTranslations('AppLayout');
+  const pathname = usePathname(); // This will be the full path including locale if prefixed
+  const { currentUser, isLoading } = useAuth(); // Removed logout as it's not used here directly
   const router = useRouter();
 
   useEffect(() => {
     if (!isLoading && !currentUser) {
-      router.push('/login');
+      router.push('/login'); // Redirect to non-localized /login, middleware will handle it
     }
   }, [currentUser, isLoading, router]);
 
@@ -34,23 +36,37 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <div className="flex h-screen w-screen items-center justify-center bg-background">
         <div className="flex flex-col items-center space-y-4">
            <Stethoscope className="h-16 w-16 text-primary animate-pulse" />
-           <p className="text-muted-foreground">Loading MediAdmin...</p>
+           <p className="text-muted-foreground">{t('loadingApp')}</p>
         </div>
       </div>
     );
   }
   
   const navItems = [
-    { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { href: '/users', label: 'User Management', icon: Users },
-    { href: '/videos', label: 'Video Management', icon: VideoIcon },
-    { href: '/analyses', label: 'Analysis Management', icon: ListChecks },
+    { href: '/dashboard', label: t('dashboard'), icon: LayoutDashboard },
+    { href: '/users', label: t('userManagement'), icon: Users },
+    { href: '/videos', label: t('videoManagement'), icon: VideoIcon },
+    { href: '/analyses', label: t('analysisManagement'), icon: ListChecks },
   ];
+
+  // Helper to check active state, considering potential locale prefixes
+  const isActive = (itemHref: string) => {
+    // pathname from next/navigation might or might not include locale
+    // For simplicity, we check if the localized path starts with the item's base href
+    // This assumes item.href is base path like '/dashboard'
+    const currentBasePath = pathname.replace(/^\/(en|zh)/, ''); // Remove locale prefix if present
+    if (itemHref === '/dashboard') {
+      return currentBasePath === '/dashboard' || currentBasePath === ''; // Root also implies dashboard
+    }
+    return currentBasePath.startsWith(itemHref);
+  };
+
 
   return (
     <SidebarProvider defaultOpen>
       <Sidebar className="border-r border-sidebar-border">
         <SidebarHeader className="p-4 border-b border-sidebar-border">
+          {/* Link component from next/link will work with next-intl middleware */}
           <Link href="/dashboard" className="flex items-center gap-2 text-sidebar-foreground hover:text-sidebar-primary transition-colors">
             <Stethoscope className="h-7 w-7" />
             <h1 className="text-xl font-bold tracking-tight">MediAdmin</h1>
@@ -62,12 +78,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               <SidebarMenuItem key={item.href}>
                 <Link href={item.href} legacyBehavior passHref>
                   <SidebarMenuButton
-                    isActive={pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href))}
+                    isActive={isActive(item.href)}
                     className="w-full justify-start text-sm font-medium"
                     tooltip={item.label}
-                    variant={pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href)) ? "default" : "ghost"}
+                    variant={isActive(item.href) ? "default" : "ghost"}
                     style={
-                      (pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href))) ? 
+                      isActive(item.href) ? 
                       { backgroundColor: 'hsl(var(--sidebar-primary))', color: 'hsl(var(--sidebar-primary-foreground))' } : 
                       { backgroundColor: 'transparent', color: 'hsl(var(--sidebar-foreground))' }
                     }

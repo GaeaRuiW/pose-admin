@@ -20,21 +20,21 @@ import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { useTranslations } from 'next-intl';
 
 const permissionToRoleId = {
   'Admin': 1,
   'Doctor': 2,
 };
 
-const NO_ROLE_VALUE = "__NO_ROLE__"; // Unique value for "None" option for Role
+const NO_ROLE_VALUE = "__NO_ROLE__";
 
-// Schema factory to handle conditional password requirement
-const createDoctorFormSchema = (isEditing: boolean) => z.object({
-  username: z.string().min(1, "Username is required.").min(2, { message: "Username must be at least 2 characters." }),
-  email: z.string().min(1, "Email is required.").email({ message: "Invalid email address." }),
+const createDoctorFormSchema = (isEditing: boolean, t: ReturnType<typeof useTranslations<'DoctorFormDialog'>>) => z.object({
+  username: z.string().min(1, t('usernameLabel') + " is required.").min(2, { message: t('usernameLabel') + " must be at least 2 characters." }),
+  email: z.string().min(1, t('emailLabel') + " is required.").email({ message: "Invalid email address." }),
   password: isEditing
-    ? z.string().min(6, { message: "New password must be at least 6 characters." }).optional().or(z.literal(''))
-    : z.string().min(6, { message: "Password must be at least 6 characters." }),
+    ? z.string().min(6, { message: t('passwordDescriptionEdit') }).optional().or(z.literal(''))
+    : z.string().min(6, { message: t('passwordDescriptionNew') }),
   phone: z.string().optional().or(z.literal('')),
   department: z.string().optional().or(z.literal('')),
   role_id: z.union([z.nativeEnum(permissionToRoleId), z.number().min(1), z.string().regex(/^\d+$/).transform(Number)])
@@ -53,15 +53,17 @@ interface DoctorFormDialogProps {
 }
 
 export function DoctorFormDialog({ open, onOpenChange, onSubmit, defaultValues }: DoctorFormDialogProps) {
+  const t = useTranslations('DoctorFormDialog');
+  const tCommon = useTranslations('Common');
   const isEditing = !!defaultValues;
-  const doctorFormSchema = createDoctorFormSchema(isEditing);
+  const doctorFormSchema = createDoctorFormSchema(isEditing, t);
 
   const form = useForm<DoctorFormData>({
     resolver: zodResolver(doctorFormSchema),
     defaultValues: {
       username: defaultValues?.username || "",
       email: defaultValues?.email || "",
-      password: "", // Always blank for edit, or for new
+      password: "", 
       phone: defaultValues?.phone || "",
       department: defaultValues?.department || "",
       role_id: defaultValues?.role_id ?? null, 
@@ -71,10 +73,9 @@ export function DoctorFormDialog({ open, onOpenChange, onSubmit, defaultValues }
 
   const handleSubmit = (data: DoctorFormData) => {
     const submissionData = { ...data };
-    if (isEditing && !data.password) { // If editing and password field is empty, don't send it
+    if (isEditing && !data.password) { 
       delete submissionData.password;
     }
-    // Ensure optional fields are correctly formatted as null if empty
     submissionData.phone = data.phone || null;
     submissionData.department = data.department || null;
     submissionData.role_id = data.role_id ? Number(data.role_id) : null;
@@ -111,9 +112,9 @@ export function DoctorFormDialog({ open, onOpenChange, onSubmit, defaultValues }
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[480px] bg-card text-card-foreground">
         <DialogHeader>
-          <DialogTitle>{defaultValues ? 'Edit Doctor' : 'Add New Doctor'}</DialogTitle>
+          <DialogTitle>{defaultValues ? t('editTitle') : t('addTitle')}</DialogTitle>
           <DialogDescription>
-            {defaultValues ? 'Update the details for this doctor.' : 'Enter the details for the new doctor.'}
+            {defaultValues ? t('editDescription') : t('addDescription')}
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -123,9 +124,9 @@ export function DoctorFormDialog({ open, onOpenChange, onSubmit, defaultValues }
               name="username"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Username <span className="text-destructive">*</span></FormLabel>
+                  <FormLabel>{t('usernameLabel')} <span className="text-destructive">*</span></FormLabel>
                   <FormControl>
-                    <Input placeholder="drjohn" {...field} className="bg-background border-input" />
+                    <Input placeholder={t('usernamePlaceholder')} {...field} className="bg-background border-input" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -136,9 +137,9 @@ export function DoctorFormDialog({ open, onOpenChange, onSubmit, defaultValues }
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Email <span className="text-destructive">*</span></FormLabel>
+                  <FormLabel>{t('emailLabel')} <span className="text-destructive">*</span></FormLabel>
                   <FormControl>
-                    <Input type="email" placeholder="john.doe@example.com" {...field} className="bg-background border-input"/>
+                    <Input type="email" placeholder={t('emailPlaceholder')} {...field} className="bg-background border-input"/>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -149,12 +150,12 @@ export function DoctorFormDialog({ open, onOpenChange, onSubmit, defaultValues }
               name="password"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Password {!isEditing && <span className="text-destructive">*</span>}</FormLabel>
+                  <FormLabel>{t('passwordLabel')} {!isEditing && <span className="text-destructive">*</span>}</FormLabel>
                   <FormControl>
-                    <Input type="password" placeholder={defaultValues ? "Leave blank to keep current" : "Enter password"} {...field} className="bg-background border-input"/>
+                    <Input type="password" placeholder={defaultValues ? t('passwordPlaceholderEdit') : t('passwordPlaceholderNew')} {...field} className="bg-background border-input"/>
                   </FormControl>
                   <FormDescription>
-                    {defaultValues ? "Leave blank to keep the current password. New password must be at least 6 characters." : "Password must be at least 6 characters."}
+                    {defaultValues ? t('passwordDescriptionEdit') : t('passwordDescriptionNew')}
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -166,9 +167,9 @@ export function DoctorFormDialog({ open, onOpenChange, onSubmit, defaultValues }
               name="phone"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Phone</FormLabel>
+                  <FormLabel>{t('phoneLabel')}</FormLabel>
                   <FormControl>
-                    <Input placeholder="555-123-4567" {...field} value={field.value ?? ''} className="bg-background border-input"/>
+                    <Input placeholder={t('phonePlaceholder')} {...field} value={field.value ?? ''} className="bg-background border-input"/>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -179,9 +180,9 @@ export function DoctorFormDialog({ open, onOpenChange, onSubmit, defaultValues }
               name="department"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Department</FormLabel>
+                  <FormLabel>{t('departmentLabel')}</FormLabel>
                   <FormControl>
-                    <Input placeholder="Cardiology" {...field} value={field.value ?? ''} className="bg-background border-input"/>
+                    <Input placeholder={t('departmentPlaceholder')} {...field} value={field.value ?? ''} className="bg-background border-input"/>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -193,7 +194,7 @@ export function DoctorFormDialog({ open, onOpenChange, onSubmit, defaultValues }
               name="role_id"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Role</FormLabel>
+                  <FormLabel>{t('roleLabel')}</FormLabel>
                   <Select 
                     onValueChange={(value) => field.onChange(value === NO_ROLE_VALUE ? null : parseInt(value))} 
                     value={field.value === null || field.value === undefined ? NO_ROLE_VALUE : field.value.toString()}
@@ -201,13 +202,13 @@ export function DoctorFormDialog({ open, onOpenChange, onSubmit, defaultValues }
                   >
                     <FormControl>
                       <SelectTrigger className="bg-background border-input">
-                        <SelectValue placeholder="Select role" />
+                        <SelectValue placeholder={t('selectRolePlaceholder')} />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value={NO_ROLE_VALUE}><em>None</em></SelectItem>
-                      <SelectItem value={String(permissionToRoleId['Admin'])}>Admin</SelectItem>
-                      <SelectItem value={String(permissionToRoleId['Doctor'])}>Doctor</SelectItem>
+                      <SelectItem value={NO_ROLE_VALUE}><em>{t('roleNone')}</em></SelectItem>
+                      <SelectItem value={String(permissionToRoleId['Admin'])}>{t('roleAdmin')}</SelectItem>
+                      <SelectItem value={String(permissionToRoleId['Doctor'])}>{t('roleDoctor')}</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -219,17 +220,17 @@ export function DoctorFormDialog({ open, onOpenChange, onSubmit, defaultValues }
               name="notes"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Notes</FormLabel>
+                  <FormLabel>{t('notesLabel')}</FormLabel>
                   <FormControl>
-                    <Textarea placeholder="Optional notes about the doctor..." {...field} value={field.value ?? ''} className="bg-background border-input"/>
+                    <Textarea placeholder={t('notesPlaceholder')} {...field} value={field.value ?? ''} className="bg-background border-input"/>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => { form.reset(); onOpenChange(false);}}>Cancel</Button>
-              <Button type="submit">{defaultValues ? 'Save Changes' : 'Add Doctor'}</Button>
+              <Button type="button" variant="outline" onClick={() => { form.reset(); onOpenChange(false);}}>{tCommon('cancel')}</Button>
+              <Button type="submit">{defaultValues ? t('saveButton') : t('addButton')}</Button>
             </DialogFooter>
           </form>
         </Form>

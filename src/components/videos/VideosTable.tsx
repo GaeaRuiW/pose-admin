@@ -11,7 +11,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Badge } from "@/components/ui/badge";
 import { format } from 'date-fns';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-
+import { useTranslations } from 'next-intl';
 
 interface SortConfig {
   key: string;
@@ -38,34 +38,34 @@ const SortableHeader = ({ children, sortKey, currentSort, onSort }: { children: 
   );
 };
 
-const getVideoTypeString = (video: Video): string => {
-  if (video.original_video) return "original";
-  if (video.inference_video) return "inference";
-  return "unknown";
-}
-
-const getVideoTypeDisplay = (video: Video): string => {
-  if (video.original_video) return "Original";
-  if (video.inference_video) return "Analysis";
-  return "Unknown";
-};
-
-const getThumbnailUrl = (video: Video, apiBaseUrl: string): string => {
-  const typeString = getVideoTypeString(video);
-  if (typeString === "unknown") return "https://picsum.photos/seed/placeholder/100/60"; // Fallback
-  return `${apiBaseUrl}/videos/thumbnail_image/${typeString}/${video.patient_id}/${video.id}`;
-};
-
-
 export function VideosTable({ videos, onDelete, onPlayVideo, sortConfig, onSort, apiBaseUrl }: VideosTableProps) {
+  const t = useTranslations('VideosTable');
+
+  const getVideoTypeString = (video: Video): string => {
+    if (video.original_video) return "original";
+    if (video.inference_video) return "inference";
+    return "unknown";
+  }
   
+  const getVideoTypeDisplay = (video: Video): string => {
+    if (video.original_video) return t('videoTypeOriginal');
+    if (video.inference_video) return t('videoTypeAnalysis');
+    return t('videoTypeUnknown');
+  };
+  
+  const getThumbnailUrl = (video: Video, apiBaseUrl: string): string => {
+    const typeString = getVideoTypeString(video);
+    if (typeString === "unknown") return "https://picsum.photos/seed/placeholder/100/60"; 
+    return `${apiBaseUrl}/videos/thumbnail_image/${typeString}/${video.patient_id}/${video.id}`;
+  };
+
   const headers = [
-    { key: 'thumbnail', label: 'Thumbnail', className: 'w-[120px]', sortable: false },
-    { key: 'video_path', label: 'Video Info', className: 'w-[250px]' },
-    { key: 'patient_username', label: 'Patient', className: 'w-[180px]' },
-    { key: 'create_time', label: 'Upload Date', className: 'w-[180px]' },
-    { key: 'action_id', label: 'Analysis ID', className: 'w-[150px]' },
-    { key: 'actions', label: 'Actions', className: 'w-[80px] text-right', sortable: false },
+    { key: 'thumbnail', label: t('thumbnail'), className: 'w-[120px]', sortable: false },
+    { key: 'video_path', label: t('videoInfo'), className: 'w-[250px]' },
+    { key: 'patient_username', label: t('patient'), className: 'w-[180px]' },
+    { key: 'create_time', label: t('uploadDate'), className: 'w-[180px]' },
+    { key: 'action_id', label: t('analysisId'), className: 'w-[150px]' },
+    { key: 'actions', label: t('actions'), className: 'w-[80px] text-right', sortable: false },
   ];
   
   return (
@@ -91,7 +91,7 @@ export function VideosTable({ videos, onDelete, onPlayVideo, sortConfig, onSort,
           {videos.length === 0 ? (
             <TableRow>
               <TableCell colSpan={headers.length} className="h-24 text-center text-muted-foreground">
-                No videos found.
+                {t('noVideosFound')}
               </TableCell>
             </TableRow>
           ) : (
@@ -101,11 +101,11 @@ export function VideosTable({ videos, onDelete, onPlayVideo, sortConfig, onSort,
                   <button 
                     onClick={() => onPlayVideo(video)} 
                     className="relative block w-[100px] h-[60px] rounded overflow-hidden group cursor-pointer"
-                    aria-label={`Play video ${video.id}`}
+                    aria-label={`${t('playVideo')} ${video.id}`}
                   >
                     <Image 
                       src={getThumbnailUrl(video, apiBaseUrl)} 
-                      alt={`Thumbnail for video ${video.id}`} 
+                      alt={`${t('thumbnail')} ${t('forVideo')} ${video.id}`} 
                       width={100} 
                       height={60} 
                       className="object-cover w-full h-full"
@@ -135,7 +135,7 @@ export function VideosTable({ videos, onDelete, onPlayVideo, sortConfig, onSort,
                 </TableCell>
                 <TableCell className="text-muted-foreground">
                     <Link href={`/users?tab=patients&patientId=${video.patient_id}`} className="hover:underline text-primary">
-                        {video.patient_username || 'N/A'}
+                        {video.patient_username || t('notApplicable')}
                     </Link>
                 </TableCell>
                 <TableCell className="text-muted-foreground">
@@ -154,19 +154,19 @@ export function VideosTable({ videos, onDelete, onPlayVideo, sortConfig, onSort,
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" className="h-8 w-8 p-0">
-                        <span className="sr-only">Open menu</span>
+                        <span className="sr-only">{t('openMenu')}</span>
                         <MoreHorizontal className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem onClick={() => onPlayVideo(video)}>
-                        <PlayCircle className="mr-2 h-4 w-4" /> Play Video
+                        <PlayCircle className="mr-2 h-4 w-4" /> {t('playVideo')}
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => window.open(`${apiBaseUrl}/videos/video/${getVideoTypeString(video)}/${video.patient_id}/${video.id}`, '_blank')}>
-                        <ExternalLink className="mr-2 h-4 w-4" /> View Raw Video
+                        <ExternalLink className="mr-2 h-4 w-4" /> {t('viewRawVideo')}
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => onDelete(video.id)} className="text-destructive focus:text-destructive focus:bg-destructive/10">
-                        <Trash2 className="mr-2 h-4 w-4" /> Delete
+                        <Trash2 className="mr-2 h-4 w-4" /> {t('delete')}
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -180,4 +180,3 @@ export function VideosTable({ videos, onDelete, onPlayVideo, sortConfig, onSort,
     </TooltipProvider>
   );
 }
-

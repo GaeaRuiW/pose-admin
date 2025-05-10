@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { format } from 'date-fns';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import Link from "next/link";
+import { useTranslations } from 'next-intl';
 
 interface SortConfig {
   key: string;
@@ -54,16 +55,17 @@ const getStatusColor = (status: string) => {
 
 
 export function AnalysesTable({ analyses, onDelete, sortConfig, onSort }: AnalysesTableProps) {
+  const t = useTranslations('AnalysesTable');
   
   const headers = [
-    { key: 'id', label: 'Analysis ID', className: 'w-[120px]' },
-    { key: 'parent_id', label: 'Parent ID', className: 'w-[120px]' },
-    { key: 'patient_username', label: 'Patient', className: 'w-[180px]' },
-    { key: 'video_id', label: 'Original Video', className: 'w-[200px]' }, 
-    { key: 'status', label: 'Status', className: 'w-[120px]' },
-    { key: 'progress', label: 'Progress', className: 'w-[200px]', sortable: false },
-    { key: 'create_time', label: 'Created Date', className: 'w-[180px]' },
-    { key: 'actions', label: 'Actions', className: 'w-[80px] text-right', sortable: false },
+    { key: 'id', label: t('analysisId'), className: 'w-[120px]' },
+    { key: 'parent_id', label: t('parentId'), className: 'w-[120px]' },
+    { key: 'patient_username', label: t('patient'), className: 'w-[180px]' },
+    { key: 'video_id', label: t('originalVideo'), className: 'w-[200px]' }, 
+    { key: 'status', label: t('status'), className: 'w-[120px]' },
+    { key: 'progress', label: t('progress'), className: 'w-[200px]', sortable: false },
+    { key: 'create_time', label: t('createdDate'), className: 'w-[180px]' },
+    { key: 'actions', label: t('actions'), className: 'w-[80px] text-right', sortable: false },
   ];
   
   return (
@@ -89,7 +91,7 @@ export function AnalysesTable({ analyses, onDelete, sortConfig, onSort }: Analys
           {analyses.length === 0 ? (
             <TableRow>
               <TableCell colSpan={headers.length} className="h-24 text-center text-muted-foreground">
-                No analyses found.
+                {t('noAnalysesFound')}
               </TableCell>
             </TableRow>
           ) : (
@@ -107,24 +109,24 @@ export function AnalysesTable({ analyses, onDelete, sortConfig, onSort }: Analys
                 </TableCell>
                 <TableCell className="text-muted-foreground">
                   <Link href={`/users?tab=patients&patientId=${analysis.patient_id}`} className="hover:underline text-primary">
-                    {analysis.patient_username || 'N/A'}
+                    {analysis.patient_username || t('notApplicable')}
                   </Link>
                 </TableCell>
                 <TableCell className="text-muted-foreground">
                    <Tooltip delayDuration={100}>
                     <TooltipTrigger asChild>
                       <Link href={`/videos?videoId=${analysis.video_id}`} className="hover:underline text-primary truncate block max-w-[180px]">
-                        {analysis.original_video_path?.split('/').pop() || `Video ID: ${analysis.video_id}`}
+                        {analysis.original_video_path?.split('/').pop() || `${t('analysisId')}: ${analysis.video_id}`}
                       </Link>
                     </TooltipTrigger>
                     <TooltipContent side="top" align="start">
-                      <p className="text-xs">{analysis.original_video_path || 'No path available'}</p>
+                      <p className="text-xs">{analysis.original_video_path || t('notApplicable')}</p>
                     </TooltipContent>
                   </Tooltip>
                 </TableCell>
                 <TableCell>
                   <Badge className={`${getStatusColor(analysis.status)} text-white`}>
-                    {analysis.status || 'N/A'}
+                    {analysis.status || t('notApplicable')}
                   </Badge>
                 </TableCell>
                 <TableCell className="text-muted-foreground text-xs max-w-[180px] truncate" title={analysis.progress}>
@@ -137,24 +139,23 @@ export function AnalysesTable({ analyses, onDelete, sortConfig, onSort }: Analys
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" className="h-8 w-8 p-0">
-                        <span className="sr-only">Open menu</span>
+                        <span className="sr-only">{t('openMenu')}</span>
                         <MoreHorizontal className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                       <DropdownMenuItem onClick={() => alert(`View details for Analysis ID: ${analysis.id}`)}> {/* Placeholder */}
-                        <Info className="mr-2 h-4 w-4" /> View Details
+                       <DropdownMenuItem onClick={() => alert(`${t('viewDetails')} ${t('analysisId')}: ${analysis.id}`)}>
+                        <Info className="mr-2 h-4 w-4" /> {t('viewDetails')}
                       </DropdownMenuItem>
-                       {/* Link to view the inference video if available */}
                        {analysis.status?.toLowerCase() === 'completed' || analysis.status?.toLowerCase() === 'finished' ? (
                          <DropdownMenuItem asChild>
-                           <Link href={`/videos?videoId=${analysis.video_id}&playInference=true`}> {/* Assuming inference video might be linked via action_id or a convention */}
-                             <ExternalLink className="mr-2 h-4 w-4" /> View Processed Video
+                           <Link href={`/videos?videoId=${analysis.video_id}&playInference=true`}>
+                             <ExternalLink className="mr-2 h-4 w-4" /> {t('viewProcessedVideo')}
                            </Link>
                          </DropdownMenuItem>
                        ) : null}
                       <DropdownMenuItem onClick={() => onDelete(analysis.id)} className="text-destructive focus:text-destructive focus:bg-destructive/10">
-                        <Trash2 className="mr-2 h-4 w-4" /> Delete
+                        <Trash2 className="mr-2 h-4 w-4" /> {t('delete')}
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>

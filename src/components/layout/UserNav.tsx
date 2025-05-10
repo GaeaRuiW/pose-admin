@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useAuth } from '@/context/AuthContext';
@@ -13,8 +14,10 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { LogOut, User as UserIcon, Settings, LifeBuoy } from 'lucide-react';
 import Image from 'next/image';
+import { useTranslations } from 'next-intl';
 
 export function UserNav() {
+  const t = useTranslations('UserNav');
   const { currentUser, logout } = useAuth();
 
   if (!currentUser) {
@@ -64,20 +67,20 @@ export function UserNav() {
         <DropdownMenuSeparator />
         <DropdownMenuItem>
           <UserIcon className="mr-2 h-4 w-4" />
-          <span>Profile</span>
+          <span>{t('profile')}</span>
         </DropdownMenuItem>
         <DropdownMenuItem>
           <Settings className="mr-2 h-4 w-4" />
-          <span>Settings</span>
+          <span>{t('settings')}</span>
         </DropdownMenuItem>
          <DropdownMenuItem>
           <LifeBuoy className="mr-2 h-4 w-4" />
-          <span>Support</span>
+          <span>{t('support')}</span>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={logout} className="text-destructive focus:text-destructive focus:bg-destructive/10">
           <LogOut className="mr-2 h-4 w-4" />
-          <span>Log out</span>
+          <span>{t('logout')}</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
