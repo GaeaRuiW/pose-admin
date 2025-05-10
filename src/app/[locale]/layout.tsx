@@ -1,14 +1,14 @@
 
 import type { Metadata } from 'next';
 import { Inter as Geist, Inter as Geist_Mono } from 'next/font/google';
-import '../globals.css'; // Adjusted path
+import '../globals.css'; 
 import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider } from '@/context/AuthContext';
 import {NextIntlClientProvider} from 'next-intl';
 import {getMessages} from 'next-intl/server'; 
 import {notFound} from 'next/navigation';
 import type { ReactNode } from 'react';
-import { locales, defaultLocale } from '@/i18n'; 
+import { locales } from '@/i18n'; // defaultLocale is not needed here
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -41,7 +41,7 @@ export default async function LocaleLayout({
   // Validate that the incoming `locale` parameter is valid
   const isValidLocale = locales.includes(locale as any);
   if (!isValidLocale) {
-    console.error(`[layout.tsx] Invalid locale detected: "${locale}". Expected one of: ${locales.join(', ')}. Calling notFound().`);
+    console.error(`[layout.tsx] Invalid locale detected in params: "${locale}". Expected one of: ${locales.join(', ')}. Calling notFound().`);
     notFound();
   }
 
@@ -59,7 +59,7 @@ export default async function LocaleLayout({
   // It's possible getMessages succeeds but returns undefined/null if i18n.ts misbehaves without throwing.
   if (!messages) {
     // This check is important because if messages is undefined, NextIntlClientProvider will error.
-    console.error(`[layout.tsx] getMessages() for locale "${locale}" returned no messages. This indicates an issue in i18n.ts or the getMessages call. Calling notFound().`);
+    console.error(`[layout.tsx] getMessages() for locale "${locale}" returned no messages. This might indicate an issue in i18n.ts or the message file itself. Calling notFound().`);
     notFound();
   }
 
@@ -76,3 +76,4 @@ export default async function LocaleLayout({
     </html>
   );
 }
+
