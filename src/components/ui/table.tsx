@@ -54,16 +54,26 @@ TableFooter.displayName = "TableFooter"
 const TableRow = React.forwardRef<
   HTMLTableRowElement,
   React.HTMLAttributes<HTMLTableRowElement>
->(({ className, ...props }, ref) => (
-  <tr
-    ref={ref}
-    className={cn(
-      "border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted",
-      className
-    )}
-    {...props}
-  />
-))
+>(({ className, children, ...rest }, ref) => {
+  // Filter out any children that are not valid React elements.
+  // This helps prevent issues with whitespace text nodes being direct children of <tr>.
+  const validChildren = React.Children.toArray(children).filter(child =>
+    React.isValidElement(child)
+  );
+
+  return (
+    <tr
+      ref={ref}
+      className={cn(
+        "border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted",
+        className
+      )}
+      {...rest}
+    >
+      {validChildren}
+    </tr>
+  );
+});
 TableRow.displayName = "TableRow"
 
 const TableHead = React.forwardRef<
