@@ -49,7 +49,7 @@ export default async function LocaleLayout({
   try {
     // Use the locale from the request context, should be equivalent to params.locale here.
     // This simplifies the call and might avoid issues if explicit locale passing has problems.
-    messages = await getMessages(); 
+    messages = await getMessages({locale}); 
   } catch (error) {
     // This catch block should ideally not be hit if i18n.ts has fallbacks or handles errors by calling notFound() itself.
     // However, if getMessages() itself throws before i18n.ts can execute fully.
@@ -76,3 +76,4 @@ export default async function LocaleLayout({
     </html>
   );
 }
+
